@@ -11,6 +11,9 @@ import tqdm
 from scipy.stats import entropy
 
 def get_extension(filename, bytearray, doublearray, metadata):
+    """
+        Return the extension of a file
+    """
     try:
         extension = os.path.splitext(filename)[-1]
         metadata["extension"] = extension
@@ -19,6 +22,9 @@ def get_extension(filename, bytearray, doublearray, metadata):
     return metadata
 
 def get_basename(filename):
+    """
+        Return the basename of a file
+    """
     try:
         basename = os.path.basename(filename)
     except:
@@ -54,10 +60,13 @@ def get_entropy(filename, bytearray, doublearray, metadata):
     return metadata
 
 def get_metadata_filename(filename):
-    dirname = filename.split("/")[:-1]
-    dirname = "/".join(dirname)
+    """
+        Given a file path, return the full path to its metadata file
+    """
+    dirname = os.path.dirname(filename)
+    filename = os.path.basename(filename)
     filename = filename.split("/")[-1]
-    return f"{dirname}/__metadata_{filename}.json"
+    return f"{dirname}{os.path.sep}__metadata_{filename}.json"
 
 def process_single_file(filename):
     """
@@ -102,7 +111,12 @@ def process_single_file(filename):
         except Exception as e:
             logging.error(f"Error writing metadata to file for {filename} {e}")
 
-def process_if_required(filename):
+def process_file_if_required(filename):
+    """
+        If a file is a regular file but not a metadata file, only then
+        process the file to extract information about it and store the same
+        in the metadata file.
+    """
     if not get_basename(filename).startswith("__metadata") \
         and not get_basename(filename).endswith(".json") \
         and os.path.isfile(filename):
@@ -123,7 +137,7 @@ def iterate_files(base_dir):
         os.chdir(base_dir)
         filenames = glob.glob("**", recursive=True)
         for i in tqdm.tqdm(range(0, len(filenames), PARALLEL_JOBS)):
-            list(map(process_if_required, filenames[i: i + PARALLEL_JOBS]))
+            list(map(process_file_if_required, filenames[i: i + PARALLEL_JOBS]))
     except Exception as e:
         logging.error(f"Exception in iteration {e}")
         raise e
