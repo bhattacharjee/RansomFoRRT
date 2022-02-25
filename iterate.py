@@ -53,24 +53,31 @@ def get_entropy(filename, bytearray, doublearray, metadata):
         2. Last 256 bytes
         3. Full file
     """
-    if "baseline" not in metadata.keys():
-        metadata["baseline"] = {}
     def get_entropy_internal(nparr):
         value, counts = np.unique(nparr, return_counts=True)
         return scipy.stats.entropy(counts, base=2)
+
+    if "baseline" not in metadata.keys():
+        metadata["baseline"] = {}
     nparr = doublearray
+
+    # Get entropy of the head bytes
     try:
         metadata["baseline"]["head_shannon_entropy"] = \
             get_entropy_internal(nparr[:256])
     except Exception as e:
         metadata["baseline"]["head_shannon_entropy"] = -1.0
         raise e
+
+    # get entropy of the tail bytes
     try:
         metadata["baseline"]["tail_shannon_entropy"] = \
             get_entropy_internal(nparr[-257:])
     except Exception as e:
         metadata["baseline"]["tail_shannon_entropy"] = -1.0
         raise e
+
+    # get entropy of all bytes
     try:
         metadata["baseline"]["shannon_entropy"] = get_entropy_internal(nparr)
     except Exception as e:
