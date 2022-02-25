@@ -236,6 +236,25 @@ def get_kurtosis(filename, bytearray, doublearray, metadata):
 
 
 
+def get_skew(filename, bytearray, doublearray, metadata):
+    """
+        Get the skew of the data
+    """
+    def skew(doublearray, metadata, name):
+        name = f"skew_{name}"
+        if name not in metadata["advanced"] or FORCE_RECALCULATION:
+            metadata["advanced"][name] = scipy.stats.skew(doublearray)
+        return metadata
+
+    metadata = skew(doublearray, metadata, "full")
+    metadata = skew(doublearray[:128], metadata, "begin")
+    metadata = skew(doublearray[-128:], metadata, "end")
+    
+    return metadata
+
+
+#-------------------------------------------------------------------------------
+
 
 ################################################################################
 ################################################################################
@@ -279,8 +298,11 @@ def process_single_file(filename):
         get_chisquare,
         get_autocorrelation,
         get_filesize,
+
         # Advanced metrics
-        get_kurtosis
+
+        get_kurtosis,
+        get_skew
     ]
     
     metadata = dict()
