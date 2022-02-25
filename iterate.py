@@ -126,6 +126,20 @@ def get_montecarlo_pi(filename, bytearray, doublearray, metadata):
     return metadata
 
 
+def get_chisquare(filename, bytearray, doublearray, metadata):
+    if not "baseline" in metadata:
+        metadata["baseline"] = {}
+
+    def get_chisquare_int(doublearray, metadata, name):
+        if name not in metadata["baseline"] or FORCE_RECALCULATION:
+            metadata["baseline"][name] = \
+                scipy.stats.chisquare(doublearray).statistic
+        return metadata
+
+    metadata = get_chisquare_int(doublearray, metadata, "chisquare_full")
+    metadata = get_chisquare_int(doublearray[:128], metadata, "chisquare_begin")
+    metadata = get_chisquare_int(doublearray[-128:], metadata, "chisquare_end")
+    return metadata
     
 
 def get_metadata_filename(filename):
@@ -150,7 +164,8 @@ def process_single_file(filename):
     process_functions = [
         get_extension,
         get_entropy,
-        get_montecarlo_pi
+        get_montecarlo_pi,
+        get_chisquare
     ]
     
     metadata = dict()
