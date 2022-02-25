@@ -10,6 +10,19 @@ import tqdm
 
 from scipy.stats import entropy
 
+class Metric:
+    def __init__(self):
+        self.__instance = None
+
+    def get_instance():
+        return None
+
+    @property
+    def instance(self):
+        return get_instance()
+
+
+
 def get_extension(filename, bytearray, doublearray, metadata):
     """
         Return the extension of a file
@@ -38,24 +51,28 @@ def get_entropy(filename, bytearray, doublearray, metadata):
         2. Last 256 bytes
         3. Full file
     """
+    if "baseline" not in metadata.keys():
+        metadata["baseline"] = {}
     def get_entropy_internal(nparr):
         value, counts = np.unique(nparr, return_counts=True)
         return scipy.stats.entropy(counts, base=2)
     nparr = doublearray
     try:
-        metadata["head_shannon_entropy"] = get_entropy_internal(nparr[:256])
+        metadata["baseline"]["head_shannon_entropy"] = \
+            get_entropy_internal(nparr[:256])
     except Exception as e:
-        metadata["head_shannon_entropy"] = -1.0
+        metadata["baseline"]["head_shannon_entropy"] = -1.0
         raise e
     try:
-        metadata["tail_shannon_entropy"] = get_entropy_internal(nparr[-257:])
+        metadata["baseline"]["tail_shannon_entropy"] = \
+            get_entropy_internal(nparr[-257:])
     except Exception as e:
-        metadata["tail_shannon_entropy"] = -1.0
+        metadata["baseline"]["tail_shannon_entropy"] = -1.0
         raise e
     try:
-        metadata["shannon_entropy"] = get_entropy_internal(nparr)
+        metadata["baseline"]["shannon_entropy"] = get_entropy_internal(nparr)
     except Exception as e:
-        metadata["shannon_entropy"] = -1.0
+        metadata["baseline"]["shannon_entropy"] = -1.0
         raise e
     return metadata
 
