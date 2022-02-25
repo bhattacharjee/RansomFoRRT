@@ -27,11 +27,13 @@ def get_extension(filename, bytearray, doublearray, metadata):
     """
         Return the extension of a file
     """
+    if not "extended" in metadata:
+        metadata["extended"] = {}
     try:
         extension = os.path.splitext(filename)[-1]
-        metadata["extension"] = extension
+        metadata["extended"]["extension"] = extension
     except:
-        metadata["extension"] = "null"
+        metadata["extended"]["extension"] = "null"
     return metadata
 
 def get_basename(filename):
