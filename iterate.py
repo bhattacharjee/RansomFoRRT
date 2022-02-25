@@ -125,6 +125,17 @@ def get_montecarlo_pi(filename, bytearray, doublearray, metadata):
     metadata["baseline"]["montecarlo_pi"] = mcp
     return metadata
 
+def get_filesize(filename, bytearray, doublearray, metadata):
+    """
+        Get the file size
+    """
+    if not "baseline" in metadata:
+        metadata["basleine"] = {}
+
+    if not "filesize" in metadata["baseline"] or FORCE_RECALCULATION:
+        metadata["baseline"]["filesize"] = len(bytearray)
+
+    return metadata
 
 def get_chisquare(filename, bytearray, doublearray, metadata):
     """
@@ -177,7 +188,8 @@ def process_single_file(filename):
         get_entropy,
         get_montecarlo_pi,
         get_chisquare,
-        get_autocorrelation
+        get_autocorrelation,
+        get_filesize
     ]
     
     metadata = dict()
@@ -195,7 +207,7 @@ def process_single_file(filename):
             nparray = np.frombuffer(nparray, dtype=np.ubyte)
             doublearray = nparray.astype(np.double)
             for process_fn in process_functions:
-                metadata = process_fn(filename, bytearray, doublearray, metadata)
+                metadata = process_fn(filename, nparray, doublearray, metadata)
                 assert(metadata is not None and isinstance(metadata, dict))
     except Exception as e:
         logging.error(f"Exception in process_single_file {filename}")
