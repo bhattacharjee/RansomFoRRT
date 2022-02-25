@@ -144,6 +144,14 @@ def get_chisquare(filename, bytearray, doublearray, metadata):
     metadata = get_chisquare_int(doublearray[-128:], metadata, "chisquare_end")
     return metadata
     
+def get_autocorrelation(filename, bytearray, doublearray, metadata):
+    if not "baseline" in metadata:
+        metadata["baseline"] = {}
+    
+    if "autocorrelation" not in metadata["baseline"] or FORCE_RECALCULATION:
+        metadata["baseline"]["autocorrelation"] = \
+            np.corrcoef(doublearray[:-1], doublearray[1:])[1, 0]
+    return metadata
 
 def get_metadata_filename(filename):
     """
@@ -168,7 +176,8 @@ def process_single_file(filename):
         get_extension,
         get_entropy,
         get_montecarlo_pi,
-        get_chisquare
+        get_chisquare,
+        get_autocorrelation
     ]
     
     metadata = dict()
