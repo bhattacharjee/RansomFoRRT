@@ -127,6 +127,9 @@ def get_montecarlo_pi(filename, bytearray, doublearray, metadata):
 
 
 def get_chisquare(filename, bytearray, doublearray, metadata):
+    """
+        Get chisquare estimate
+    """
     if not "baseline" in metadata:
         metadata["baseline"] = {}
 
