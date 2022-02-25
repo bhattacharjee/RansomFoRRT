@@ -12,19 +12,6 @@ from scipy.stats import entropy
 
 FORCE_RECALCULATION = False
 
-class Metric:
-    def __init__(self):
-        self.__instance = None
-
-    def get_instance():
-        return None
-
-    @property
-    def instance(self):
-        return get_instance()
-
-
-
 def get_extension(filename, bytearray, doublearray, metadata):
     """
         Return the extension of a file
@@ -40,6 +27,12 @@ def get_extension(filename, bytearray, doublearray, metadata):
         metadata["extended"]["extension"] = "null"
     return metadata
 
+
+
+#-------------------------------------------------------------------------------
+
+
+
 def get_basename(filename):
     """
         Return the basename of a file
@@ -49,6 +42,13 @@ def get_basename(filename):
     except:
         basename = "null"
     return basename
+
+
+
+
+#-------------------------------------------------------------------------------
+
+
 
 def get_entropy(filename, bytearray, doublearray, metadata):
     """
@@ -92,6 +92,12 @@ def get_entropy(filename, bytearray, doublearray, metadata):
             raise e
     return metadata
 
+
+
+#-------------------------------------------------------------------------------
+
+
+
 def get_montecarlo_pi(filename, bytearray, doublearray, metadata):
     """
         Fill the montecarlo estimation of pi
@@ -125,6 +131,16 @@ def get_montecarlo_pi(filename, bytearray, doublearray, metadata):
     metadata["baseline"]["montecarlo_pi"] = mcp
     return metadata
 
+
+
+
+
+#-------------------------------------------------------------------------------
+
+
+
+
+
 def get_filesize(filename, bytearray, doublearray, metadata):
     """
         Get the file size
@@ -136,6 +152,15 @@ def get_filesize(filename, bytearray, doublearray, metadata):
         metadata["baseline"]["filesize"] = len(bytearray)
 
     return metadata
+
+
+
+
+
+#-------------------------------------------------------------------------------
+
+
+
 
 def get_chisquare(filename, bytearray, doublearray, metadata):
     """
@@ -155,6 +180,14 @@ def get_chisquare(filename, bytearray, doublearray, metadata):
     metadata = get_chisquare_int(doublearray[-128:], metadata, "chisquare_end")
     return metadata
     
+
+
+
+#-------------------------------------------------------------------------------
+
+
+
+
 def get_autocorrelation(filename, bytearray, doublearray, metadata):
     if not "baseline" in metadata:
         metadata["baseline"] = {}
@@ -164,6 +197,13 @@ def get_autocorrelation(filename, bytearray, doublearray, metadata):
             np.corrcoef(doublearray[:-1], doublearray[1:])[1, 0]
     return metadata
 
+
+
+
+
+
+
+
 def get_metadata_filename(filename):
     """
         Given a file path, return the full path to its metadata file
@@ -172,6 +212,12 @@ def get_metadata_filename(filename):
     filename = os.path.basename(filename)
     filename = filename.split("/")[-1]
     return f"{dirname}{os.path.sep}__metadata_{filename}.json"
+
+
+
+
+
+
 
 def process_single_file(filename):
     """
@@ -220,6 +266,12 @@ def process_single_file(filename):
         except Exception as e:
             logging.error(f"Error writing metadata to file for {filename} {e}")
 
+
+
+
+
+
+
 def process_file_if_required(filename):
     """
         If a file is a regular file but not a metadata file, only then
@@ -231,7 +283,17 @@ def process_file_if_required(filename):
         and os.path.isfile(filename):
         process_single_file(filename)
 
+
+
+
+
+
 PARALLEL_JOBS = 128
+
+
+
+
+
 def iterate_files(base_dir):
     """
         Iterate over a directory, and for every file that is not a metadata
@@ -254,12 +316,22 @@ def iterate_files(base_dir):
         if savedir is not None:
             os.chdir(savedir)
 
+
+
+
+
+
+
 def main():
     parser = argparse.ArgumentParser(\
         description="Iterate files and add statistics")
     parser.add_argument("--directory", "-d", type=str, required=True)
     args = parser.parse_args()
     iterate_files(args.directory)
+
+
+
+
 
 if "__main__" == __name__:
     main()
