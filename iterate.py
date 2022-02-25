@@ -192,9 +192,17 @@ def get_autocorrelation(filename, bytearray, doublearray, metadata):
     if not "baseline" in metadata:
         metadata["baseline"] = {}
     
-    if "autocorrelation" not in metadata["baseline"] or FORCE_RECALCULATION:
-        metadata["baseline"]["autocorrelation"] = \
-            np.corrcoef(doublearray[:-1], doublearray[1:])[1, 0]
+    def autocorrelation(doublearray, metadata, name):
+        name = f"autocorrelation_{name}"
+        if name not in metadata["baseline"] or FORCE_RECALCULATION:
+            metadata["baseline"][name] = \
+                np.corrcoef(doublearray[:-1], doublearray[1:])[1, 0]
+        return metadata
+
+    metadata = autocorrelation(doublearray, metadata, "full")
+    metadata = autocorrelation(doublearray[:128], metadata, "begin")
+    metadata = autocorrelation(doublearray[-128:], metadata, "end")
+
     return metadata
 
 
@@ -203,6 +211,39 @@ def get_autocorrelation(filename, bytearray, doublearray, metadata):
 
 
 
+def get_kurtosis(filename, bytearray, doublearray, metadata):
+    """
+        Get the kurtosis of a file
+    """
+    def kurtosis(doublearray, metadata, name):
+        name = f"kurtosis_{name}"
+        if name not in metadata["advanced"] or FORCE_RECALCULATION:
+            metadata["advanced"][name] = \
+                scipy.stats.kurtosis(doublearray)
+        return metadata
+
+    if "advanced" not in metadata:
+        metadata["advanced"] = {}
+
+    metadata = kurtosis(doublearray, metadata, "full")
+    metadata = kurtosis(doublearray[-128:], metadata, "end")
+    metadata = kurtosis(doublearray[:128], metadata, "begin")
+    return metadata
+
+    
+
+#-------------------------------------------------------------------------------
+
+
+
+
+################################################################################
+################################################################################
+################################################################################
+################################################################################
+################################################################################
+################################################################################
+################################################################################
 
 
 def get_metadata_filename(filename):
@@ -237,7 +278,9 @@ def process_single_file(filename):
         get_montecarlo_pi,
         get_chisquare,
         get_autocorrelation,
-        get_filesize
+        get_filesize,
+        # Advanced metrics
+        get_kurtosis
     ]
     
     metadata = dict()
