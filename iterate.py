@@ -10,6 +10,8 @@ import tqdm
 
 from scipy.stats import entropy
 
+FORCE_RECALCULATION = False
+
 class Metric:
     def __init__(self):
         self.__instance = None
@@ -29,6 +31,8 @@ def get_extension(filename, bytearray, doublearray, metadata):
     """
     if not "extended" in metadata:
         metadata["extended"] = {}
+    if "extension" in metadata["extended"] and not FORCE_RECALCULATION:
+        return metadata
     try:
         extension = os.path.splitext(filename)[-1]
         metadata["extended"]["extension"] = extension
@@ -61,29 +65,68 @@ def get_entropy(filename, bytearray, doublearray, metadata):
         metadata["baseline"] = {}
     nparr = doublearray
 
-    # Get entropy of the head bytes
-    try:
-        metadata["baseline"]["head_shannon_entropy"] = \
-            get_entropy_internal(nparr[:256])
-    except Exception as e:
-        metadata["baseline"]["head_shannon_entropy"] = -1.0
-        raise e
+    if "head_shannon_entropy" not in metadata["baseline"] or FORCE_RECALCULATION:
+        # Get entropy of the head bytes
+        try:
+            metadata["baseline"]["head_shannon_entropy"] = \
+                get_entropy_internal(nparr[:256])
+        except Exception as e:
+            metadata["baseline"]["head_shannon_entropy"] = -1.0
+            raise e
 
     # get entropy of the tail bytes
-    try:
-        metadata["baseline"]["tail_shannon_entropy"] = \
-            get_entropy_internal(nparr[-257:])
-    except Exception as e:
-        metadata["baseline"]["tail_shannon_entropy"] = -1.0
-        raise e
+    if "tail_shannon_entropy" not in metadata["baseline"] or FORCE_RECALCULATION:
+        try:
+            metadata["baseline"]["tail_shannon_entropy"] = \
+                get_entropy_internal(nparr[-257:])
+        except Exception as e:
+            metadata["baseline"]["tail_shannon_entropy"] = -1.0
+            raise e
 
     # get entropy of all bytes
-    try:
-        metadata["baseline"]["shannon_entropy"] = get_entropy_internal(nparr)
-    except Exception as e:
-        metadata["baseline"]["shannon_entropy"] = -1.0
-        raise e
+    if "shannon_entropy" not in metadata["baseline"] or FORCE_RECALCULATION:
+        try:
+            metadata["baseline"]["shannon_entropy"] = get_entropy_internal(nparr)
+        except Exception as e:
+            metadata["baseline"]["shannon_entropy"] = -1.0
+            raise e
     return metadata
+
+def get_montecarlo_pi(filename, bytearray, doublearray, metadata):
+    """
+        Fill the montecarlo estimation of pi
+    """
+    trials = 0
+    counts = 0
+
+    if not "baseline" in metadata:
+        metadata["baseline"] = {}
+
+    if "montecarlo_pi" in metadata["baseline"] and not FORCE_RECALCULATION:
+        return metadata
+
+    doublearray = doublearray - np.min(doublearray)
+    doublearray = doublearray / np.max(doublearray)
+    for i in range(0, len(doublearray), 2):
+        try:
+            trials += 1
+            x1 = doublearray[i]
+            x2 = doublearray[i + 1]
+            if (x1 * x1 + x2 * x2 <= 1):
+                counts += 1
+        except:
+            break
+
+    try:
+        mcp = 4.0 * counts / trials
+    except Exception:
+        mcp = 0.0
+
+    metadata["baseline"]["montecarlo_pi"] = mcp
+    return metadata
+
+
+    
 
 def get_metadata_filename(filename):
     """
@@ -106,7 +149,8 @@ def process_single_file(filename):
     """
     process_functions = [
         get_extension,
-        get_entropy
+        get_entropy,
+        get_montecarlo_pi
     ]
     
     metadata = dict()
