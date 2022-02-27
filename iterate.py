@@ -376,7 +376,7 @@ def iterate_files(base_dir):
     try:
         savedir = os.getcwd()
         os.chdir(base_dir)
-        filenames = glob.glob("**", recursive=True)
+        filenames = glob.glob("./**", recursive=True)
         for i in tqdm.tqdm(range(0, len(filenames), PARALLEL_JOBS)):
             list(map(process_file_if_required, filenames[i: i + PARALLEL_JOBS]))
     except Exception as e:
