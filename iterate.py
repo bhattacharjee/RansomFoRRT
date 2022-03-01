@@ -6,11 +6,13 @@ import json
 import logging
 import argparse
 import numpy as np
+from scipy import signal
 import tqdm
 
 from scipy.stats import entropy
 
 FORCE_RECALCULATION = False
+FORCE_FOURIER_RECALCULATION = False
 
 def get_extension(filename, bytearray, doublearray, metadata):
     """
@@ -253,6 +255,98 @@ def get_skew(filename, bytearray, doublearray, metadata):
     return metadata
 
 
+
+#-------------------------------------------------------------------------------
+
+
+def get_fourier_psd(filename, byte1_array, doublearray, metadata):
+    """
+        Get the fourier spectrum of the data
+    """
+    def get_sorted_spectrum(f, p):
+        """
+            Sort the power spectrum by frequency
+        """
+        arr = sorted([(f[i], p[i]) for i in range(len(f))])
+        f = [a[0] for a in arr]
+        p = [a[1] for a in arr]
+
+        # Ignore stuff around the zero frequency as energies are usually very low
+        # there and tends to give wrong results
+        indexes_to_ignore = []
+        for i, n in enumerate(f):
+            if n == 0.0:
+                indexes_to_ignore = [i-2, i-1, i, i+1, i+2]
+        if len(indexes_to_ignore) > 0:
+            f = [f[i] for i in range(len(f)) if i not in indexes_to_ignore]
+            p = [p[i] for i in range(len(p)) if i not in indexes_to_ignore]
+        return f, p
+
+
+    def get_welch(sequence):
+        """
+            Get the welch power spectrum for the sequence of bytes
+        """
+       # Mostly it returns the same frequencies, but not always
+       # We will ignore if frequencies are different
+       freq, psd = signal.welch(sequence, return_onesided = False)
+       freq, psd = get_sorted_spectrum(freq, psd)
+       return np.array(freq), np.array(psd)
+
+    def get_stats(nparray):
+        """
+            Get some stats for the fourier transform power spectrum:
+            mean, autocorrelation, and standard deviation
+        """
+        f_autocorr = np.corrcoef(nparray[:-1], nparray[1:])[1, 0]
+        f_mean = np.mean(nparray)
+        f_std = np.std(nparray)
+        return f_mean, f_std, f_autocorr
+
+    def process_buffer(nparray, name):
+        """
+            Now that we have the fourier array, add it to the json
+        """
+        f, p = get_welch(nparray)
+        f_autocorr, f_mean, f_std = get_stats(p)
+        metadata["fourier"][f"stat.{name}.autocorr"] = f_autocorr
+        metadata["fourier"][f"stat.{name}.mean"] = f_mean
+        metadata["fourier"][f"stat.{name}.std"] = f_std
+        for n, power in enumerate(p):
+            metadata["fourier"][f"value.{name}.{n}"] = float(power)
+
+    def expand_buffer(inbuffer, nbytes):
+        """
+            Buffer should be as large as nperseg * nbytes (256 * nbytes)
+            where nbytes is the number of bytes that were read together
+            for each entry of the numpy array, in our case 4 and 1
+        """
+        buffer = b''
+        while len(buffer) <= 256 * nbytes:
+            buffer += inbuffer
+        return buffer
+
+    padding = [b'', b'000', b'00', b'0']
+    if "fourier" not in metadata \
+        or FORCE_FOURIER_RECALCULATION or FORCE_RECALCULATION:
+        with open(filename, "rb") as fp:
+            byte1_array = bytearray(fp.read())
+            byte1_array = expand_buffer(byte1_array, 1)
+            byte4_array = expand_buffer(byte1_array, 4)
+
+            nparray = np.frombuffer(byte1_array, dtype=np.ubyte)
+            doublearray_1byte = nparray.astype(np.double)
+
+            paddedarray = byte4_array + padding[len(byte4_array) % 4]
+            nparray = np.frombuffer(paddedarray, dtype=np.intc)
+            doublearray_4byte = nparray.astype(np.double)
+
+            metadata["fourier"] = {}
+            process_buffer(doublearray_1byte, "1byte")
+            process_buffer(doublearray_4byte, "4byte")
+
+    return metadata
+
 #-------------------------------------------------------------------------------
 
 
@@ -302,7 +396,10 @@ def process_single_file(filename):
         # Advanced metrics
 
         get_kurtosis,
-        get_skew
+        get_skew,
+
+        # Fourier spectrum
+        get_fourier_psd
     ]
     
     metadata = dict()
