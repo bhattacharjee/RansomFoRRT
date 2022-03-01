@@ -287,11 +287,11 @@ def get_fourier_psd(filename, byte1_array, doublearray, metadata):
         """
             Get the welch power spectrum for the sequence of bytes
         """
-       # Mostly it returns the same frequencies, but not always
-       # We will ignore if frequencies are different
-       freq, psd = signal.welch(sequence, return_onesided = False)
-       freq, psd = get_sorted_spectrum(freq, psd)
-       return np.array(freq), np.array(psd)
+        # Mostly it returns the same frequencies, but not always
+        # We will ignore if frequencies are different
+        freq, psd = signal.welch(sequence, return_onesided = False)
+        freq, psd = get_sorted_spectrum(freq, psd)
+        return np.array(freq), np.array(psd)
 
     def get_stats(nparray):
         """
