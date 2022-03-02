@@ -195,7 +195,7 @@ def get_moments(filename, bytearray, doublearray, metadata):
     """
 
     def get_moment(doublearray, keyname, n):
-        if keyname not in metadata["advanced"] or FORCE_FOURIER_RECALCULATION:
+        if keyname not in metadata["advanced"] or FORCE_RECALCULATION:
             moment = scipy.stats.moment(doublearray, moment=n)
             metadata["advanced"][keyname] = moment
 
@@ -334,10 +334,17 @@ def get_fourier_psd(filename, byte1_array, doublearray, metadata):
             Now that we have the fourier array, add it to the json
         """
         f, p = get_welch(nparray)
+
+        # Add some stats about the fourier power spectrum
         f_autocorr, f_mean, f_std = get_stats(p)
         metadata["fourier"][f"stat.{name}.autocorr"] = f_autocorr
         metadata["fourier"][f"stat.{name}.mean"] = f_mean
         metadata["fourier"][f"stat.{name}.std"] = f_std
+        for n in range(2, 16):
+            moment = scipy.stats.moment(p, n)
+            metadata["fourier"][f"stat.{name}.moment.{n}"] = moment
+
+        # Finally add the full fourier spectrum in case we need it
         for n, power in enumerate(p):
             metadata["fourier"][f"value.{name}.{n}"] = float(power)
 
