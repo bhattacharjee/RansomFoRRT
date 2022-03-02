@@ -189,6 +189,32 @@ def get_chisquare(filename, bytearray, doublearray, metadata):
 
 
 
+def get_moments(filename, bytearray, doublearray, metadata):
+    """
+        Get statistical moments (an array of them)
+    """
+
+    def get_moment(doublearray, keyname, n):
+        if keyname not in metadata["advanced"] or FORCE_FOURIER_RECALCULATION:
+            moment = scipy.stats.moment(doublearray, moment=n)
+            metadata["advanced"][keyname] = moment
+
+    if "advanced" not in metadata:
+        metadata["advanced"] = {}
+
+    for i in range(2, 16):
+        get_moment(doublearray, f"moment_full.{i}", i)
+        get_moment(doublearray[:128], f"moment_begin.{i}", i)
+        get_moment(doublearray[-128:], f"moment_end.{i}", i)
+
+    return metadata
+
+
+
+#-------------------------------------------------------------------------------
+
+
+
 
 def get_autocorrelation(filename, bytearray, doublearray, metadata):
     if not "baseline" in metadata:
@@ -397,6 +423,7 @@ def process_single_file(filename):
 
         get_kurtosis,
         get_skew,
+        get_moments,
 
         # Fourier spectrum
         get_fourier_psd
@@ -454,7 +481,7 @@ def process_file_if_required(filename):
 #-------------------------------------------------------------------------------
 
 
-PARALLEL_JOBS = 128
+PARALLEL_JOBS = 12
 
 
 
