@@ -8,6 +8,7 @@ import argparse
 import numpy as np
 from scipy import signal
 import tqdm
+import dit
 
 from scipy.stats import entropy
 
@@ -94,6 +95,51 @@ def get_entropy(filename, bytearray, doublearray, metadata):
             raise e
     return metadata
 
+
+
+#-------------------------------------------------------------------------------
+
+
+def get_dit_entropies(filename, bytearray, doublearray, metadata):
+    """
+        Use the dit library to get shannon and Renyi entropies
+    """
+
+    def get_dit_entropy(bytearray, name):
+        counts = None
+        values = None
+        probabilities = None
+        d = None
+
+        if "advanced" not in metadata:
+            metadata["advanced"] = {}
+
+        for i in range(11):
+            keyname = f"dit.renyi.{name}.{i}"
+            if keyname not in metadata["advanced"]:
+                if counts is None or values is None or d is None:
+                    counts, values = np.histogram(bytearray,bins=256,range=(0, 256))
+                    values = values[:-1]
+                    probabilities = counts / bytearray.shape[0]
+                    d = dit.ScalarDistribution(values, probabilities)
+                metadata["advanced"][keyname] = \
+                    dit.other.renyi_entropy(d, order=i, rvs=None, rv_mode='names')
+        keyname = f"dit.shanon.{name}"
+        if keyname not in metadata["advanced"]:
+            if counts is None or values is None or d is None:
+                counts, values = np.histogram(bytearray,bins=256,range=(0, 256))
+                values = values[:-1]
+                probabilities = counts / bytearray.shape[0]
+                d = dit.ScalarDistribution(values, probabilities)
+            metadata["advanced"][keyname] = dit.shannon.entropy(d)
+
+    get_dit_entropy(bytearray[:128], "begin")
+    get_dit_entropy(bytearray[-128:], "tail")
+    get_dit_entropy(bytearray, "full")
+
+    return metadata
+
+                
 
 
 #-------------------------------------------------------------------------------
@@ -431,6 +477,7 @@ def process_single_file(filename):
         get_kurtosis,
         get_skew,
         get_moments,
+        get_dit_entropies,
 
         # Fourier spectrum
         get_fourier_psd
