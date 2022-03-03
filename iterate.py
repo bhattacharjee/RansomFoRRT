@@ -157,6 +157,16 @@ def get_dit_entropies(filename, bytearray, doublearray, metadata):
                 d = dit.ScalarDistribution(values, probabilities)
             metadata["advanced"][keyname] = dit.other.extropy(d)
 
+        for i in range(11):
+            keyname = f"dit.tsallis.{name}.{i}"
+            if keyname not in metadata["advanced"]:
+                if counts is None or values is None or d is None:
+                    counts, values = np.histogram(bytearray,bins=256,range=(0, 256))
+                    values = values[:-1]
+                    probabilities = counts / bytearray.shape[0]
+                    d = dit.ScalarDistribution(values, probabilities)
+                metadata["advanced"][keyname] = dit.other.tsallis_entropy(d, order=i)
+
 
     get_dit_entropy(bytearray[:128], "begin")
     get_dit_entropy(bytearray[-128:], "tail")
