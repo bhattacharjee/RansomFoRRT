@@ -7,3 +7,5 @@ do
         ./convert_to_pandas.py -d $j
     done
 done
+
+./combine_pandas.py
