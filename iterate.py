@@ -114,6 +114,7 @@ def get_dit_entropies(filename, bytearray, doublearray, metadata):
         if "advanced" not in metadata:
             metadata["advanced"] = {}
 
+        # Renyi 0 through 10
         for i in range(11):
             keyname = f"dit.renyi.{name}.{i}"
             if keyname not in metadata["advanced"]:
@@ -124,6 +125,18 @@ def get_dit_entropies(filename, bytearray, doublearray, metadata):
                     d = dit.ScalarDistribution(values, probabilities)
                 metadata["advanced"][keyname] = \
                     dit.other.renyi_entropy(d, order=i, rvs=None, rv_mode='names')
+
+        # Renyi infinity (most probable event)
+        keyname = f"dit.renyi.{name}.inf"
+        if keyname not in metadata["advanced"]:
+            if counts is None or values is None or d is None:
+                counts, values = np.histogram(bytearray,bins=256,range=(0, 256))
+                values = values[:-1]
+                probabilities = counts / bytearray.shape[0]
+                d = dit.ScalarDistribution(values, probabilities)
+            metadata["advanced"][keyname] = \
+                dit.other.renyi_entropy(d, order=np.inf, rvs=None, rv_mode='names')
+
         keyname = f"dit.shanon.{name}"
         if keyname not in metadata["advanced"]:
             if counts is None or values is None or d is None:
