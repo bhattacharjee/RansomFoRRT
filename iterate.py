@@ -148,6 +148,16 @@ def get_dit_entropies(filename, bytearray, doublearray, metadata):
                 d = dit.ScalarDistribution(values, probabilities)
             metadata["advanced"][keyname] = dit.shannon.entropy(d)
 
+        keyname = f"dit.extropy.{name}"
+        if keyname not in metadata["advanced"]:
+            if counts is None or values is None or d is None:
+                counts, values = np.histogram(bytearray,bins=256,range=(0, 256))
+                values = values[:-1]
+                probabilities = counts / bytearray.shape[0]
+                d = dit.ScalarDistribution(values, probabilities)
+            metadata["advanced"][keyname] = dit.other.extropy(d)
+
+
     get_dit_entropy(bytearray[:128], "begin")
     get_dit_entropy(bytearray[-128:], "tail")
     get_dit_entropy(bytearray, "full")
@@ -552,7 +562,7 @@ def process_file_if_required(filename):
 #-------------------------------------------------------------------------------
 
 
-PARALLEL_JOBS = 1
+PARALLEL_JOBS = 4
 
 
 
