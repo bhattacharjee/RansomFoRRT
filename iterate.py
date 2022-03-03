@@ -26,8 +26,10 @@ def get_extension(filename, bytearray, doublearray, metadata):
     try:
         extension = os.path.splitext(filename)[-1]
         metadata["extended"]["extension"] = extension
+        metadata["extended"]["base_filename"] = os.path.basename(filename)
     except:
         metadata["extended"]["extension"] = "null"
+        metadata["extended"]["base_filename"] = os.path.basename(filename)
     return metadata
 
 
@@ -548,7 +550,7 @@ def process_file_if_required(filename):
 #-------------------------------------------------------------------------------
 
 
-PARALLEL_JOBS = 12
+PARALLEL_JOBS = 4
 
 
 
