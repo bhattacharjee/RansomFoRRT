@@ -29,7 +29,7 @@ PARALLEL_JOBS = 24
 
 def flatten_json(injson):
     outjson = {}
-    for outercol in ["extended", "baseline", "advanced"]:
+    for outercol in ["extended", "baseline", "advanced", "fourier"]:
         for k in injson[outercol]:
             outjson[f"{outercol}.{k}"] = injson[outercol][k]
     return outjson
@@ -64,7 +64,8 @@ def iterate_files(base_dir):
             json.dump(accumulator, f)
         df = pd.read_json(TEMPFILENAME, orient='records')
         os.chdir(savedir)
-        df.to_parquet(f"{base_dir}.parquet.gzip", compression='gzip')
+        df.to_csv(f"{base_dir}.csv")
+        #df.to_parquet(f"{base_dir}.parquet.gzip", compression='gzip')
     except Exception as e:
         logging.error(f"Exception in iteration {e}")
         raise e
