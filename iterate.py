@@ -388,7 +388,8 @@ def get_fourier_psd(filename, byte1_array, doublearray, metadata):
         f_autocorr = np.corrcoef(nparray[:-1], nparray[1:])[1, 0]
         f_mean = np.mean(nparray)
         f_std = np.std(nparray)
-        return f_mean, f_std, f_autocorr
+        f_chisq = scipy.stats.chisquare(nparray).statistic
+        return f_mean, f_std, f_autocorr, f_chisq
 
     def process_buffer(nparray, name):
         """
@@ -397,10 +398,11 @@ def get_fourier_psd(filename, byte1_array, doublearray, metadata):
         f, p = get_welch(nparray)
 
         # Add some stats about the fourier power spectrum
-        f_autocorr, f_mean, f_std = get_stats(p)
+        f_autocorr, f_mean, f_std, f_chisq = get_stats(p)
         metadata["fourier"][f"stat.{name}.autocorr"] = f_autocorr
         metadata["fourier"][f"stat.{name}.mean"] = f_mean
         metadata["fourier"][f"stat.{name}.std"] = f_std
+        metadata["fourier"][f"stat.{name}.chisq"] = f_chisq
         for n in range(2, 16):
             moment = scipy.stats.moment(p, n)
             metadata["fourier"][f"stat.{name}.moment.{n}"] = moment
@@ -550,7 +552,7 @@ def process_file_if_required(filename):
 #-------------------------------------------------------------------------------
 
 
-PARALLEL_JOBS = 4
+PARALLEL_JOBS = 1
 
 
 
