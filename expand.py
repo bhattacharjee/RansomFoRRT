@@ -5,6 +5,7 @@ import json
 import logging
 import argparse
 import tqdm
+import logging
 
 from scipy.stats import entropy
 
@@ -65,8 +66,7 @@ def process_single_file(filename):
         if os.path.exists(temp_filename):
             os.unlink(filename)
             os.rename(temp_filename, filename)
-            print(f"overwrote {filename}")
-
+            logging.debug(f"Overwrote {filename}")
 
 
 #-------------------------------------------------------------------------------
