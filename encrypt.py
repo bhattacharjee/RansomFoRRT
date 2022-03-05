@@ -189,14 +189,14 @@ def encrypt_file_alternate_blocksv2_opt(block_size):
                 while enc_ind < len(encrypted_buffer) \
                     or unenc_ind < len(unencrypted_buffer):
 
-                    if enc_ind < len(encrypted_buffer):
-                        f.write(encrypted_buffer[enc_ind:enc_ind + block_size])
-                        enc_ind += block_size
-
                     if unenc_ind < len(unencrypted_buffer):
                         f.write(unencrypted_buffer[\
                                     unenc_ind:unenc_ind + block_size])
                         unenc_ind += block_size
+
+                    if enc_ind < len(encrypted_buffer):
+                        f.write(encrypted_buffer[enc_ind:enc_ind + block_size])
+                        enc_ind += block_size
 
                 # Finally write the tail unencrypted buffer
                 f.write(tail_buffer)
