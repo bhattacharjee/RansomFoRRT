@@ -23,7 +23,7 @@ from hashlib import md5
 password = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
 BLOCK_SIZE = 16
 
-EXTREMITY_SIZE = 32
+EXTREMITY_SIZE = 128
 
 def pad (data):
     pad = BLOCK_SIZE - len(data) % BLOCK_SIZE
@@ -66,7 +66,7 @@ def encrypt_file_alternate_blocks(block_size):
         every alternate 16 bytes (or block size bytes)
     """
     def encrypt_fn(filename):
-        print("called")
+        print(f"Encrypting {filename} : {EXTREMITY_SIZE} {BLOCK_SIZE}")
         if not os.path.exists(filename) or not os.path.isfile(filename):
             return
 
