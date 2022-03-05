@@ -162,8 +162,15 @@ def encrypt_file_alternate_blocksv2_opt(block_size):
         npbuffer = npbuffer.reshape(\
             (npbuffer.shape[0] // block_size, block_size))
 
-        even_npbuffer = npbuffer[::block_size]
-        odd_npbuffer = npbuffer[1::block_size]
+        even_npbuffer = npbuffer[::2,:]
+        odd_npbuffer = npbuffer[1::2,:]
+
+        # for i in range(5):
+        #     print("evn: ", even_npbuffer[i,:].tobytes(), "\n")
+        #     print("odd: ", odd_npbuffer[i,:].tobytes(), "\n")
+        # print('-' * 80)
+        # print()
+        # print()
 
         encrypted_buffer = encrypt_buffer(odd_npbuffer.tobytes(), "", password)
         unencrypted_buffer = even_npbuffer.tobytes()
