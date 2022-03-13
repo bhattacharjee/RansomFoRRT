@@ -1,3 +1,3 @@
 ,Accuracy,F1,Importance,Precision,Recall
-With Skew and Kurtosis (averages),0.7091130864857639,0.7303146891745143,,0.6837133974964033,0.7931383122135347
-Without Skew and Kurtosis (averages),,,0.06249999999999999,,
+With Skew and Kurtosis (averages),0.7085282716214409,0.7276666893189825,,0.6786786542896223,0.7934945504087193
+Without Skew and Kurtosis (averages),,,0.0625,,

@@ -1,21 +1,21 @@
 ,Feature,Importance,Type,Kurtosis and Skew Used,Algorithm,Accuracy,Precision,Recall,F1,Extremities Measured Separately
-0,advanced.skew_end,0.02029710715445893,Advanced,0,,,,,,
-1,advanced.kurtosis_end,0.020418391339805185,Advanced,0,,,,,,
-2,advanced.kurtosis_full,0.02288716400030707,Advanced,0,,,,,,
-3,advanced.skew_full,0.02399489701163219,Advanced,0,,,,,,
-4,baseline.montecarlo_pi,0.024261582710960503,Baseline,0,,,,,,
-5,baseline.chisquare_full,0.028986096274484008,Baseline,0,,,,,,
-6,advanced.skew_begin,0.03226117524599666,Advanced,0,,,,,,
-7,advanced.kurtosis_begin,0.034743435840377895,Advanced,0,,,,,,
-8,baseline.chisquare_end,0.04019375812369415,Baseline,0,,,,,,
-9,baseline.shannon_entropy,0.04131224116508975,Baseline,0,,,,,,
-10,baseline.autocorrelation_end,0.04288409051828013,Baseline,0,,,,,,
-11,baseline.autocorrelation_full,0.06366706506428357,Baseline,0,,,,,,
-12,baseline.tail_shannon_entropy,0.07177292028220546,Baseline,0,,,,,,
-13,baseline.chisquare_begin,0.11614193844715176,Baseline,0,,,,,,
-14,baseline.autocorrelation_begin,0.15974954081530338,Baseline,0,,,,,,
-15,baseline.head_shannon_entropy,0.25642859600596934,Baseline,0,,,,,,
-16,,,,1,Logistic Regression,0.6686271888784922,0.6124108938036922,0.9033432191965489,0.7299564270152505,NO
-17,,,,1,Logistic Regression,0.765539366394867,0.7365110089523349,0.8207063898624967,0.7763325682223924,YES
-18,,,,1,Random Forest,0.6508488170030745,0.6319143819143819,0.7084119708816392,0.6679801703317656,NO
-19,,,,1,Random Forest,0.7514369736666221,0.754017305315204,0.7400916689134538,0.7469895911286482,YES
+0,baseline.head_shannon_entropy,0.23366399707339916,Baseline,0,,,,,,
+1,baseline.autocorrelation_begin,0.17172908290000874,Baseline,0,,,,,,
+2,baseline.chisquare_begin,0.14035023700167504,Baseline,0,,,,,,
+3,baseline.tail_shannon_entropy,0.06827178386166252,Baseline,0,,,,,,
+4,baseline.autocorrelation_full,0.05904458535099354,Baseline,0,,,,,,
+5,baseline.shannon_entropy,0.04123031926060303,Baseline,0,,,,,,
+6,baseline.chisquare_end,0.039157407613226274,Baseline,0,,,,,,
+7,baseline.autocorrelation_end,0.03645320450278157,Baseline,0,,,,,,
+8,advanced.kurtosis_begin,0.03485023311302594,Advanced,0,,,,,,
+9,advanced.skew_begin,0.031784912655874714,Advanced,0,,,,,,
+10,baseline.chisquare_full,0.029280008141269295,Baseline,0,,,,,,
+11,baseline.montecarlo_pi,0.025346358406783828,Baseline,0,,,,,,
+12,advanced.skew_full,0.024116284720422917,Advanced,0,,,,,,
+13,advanced.kurtosis_full,0.02408742943231374,Advanced,0,,,,,,
+14,advanced.kurtosis_end,0.020416745579650515,Advanced,0,,,,,,
+15,advanced.skew_end,0.020217410386309122,Advanced,0,,,,,,
+16,,,,1,Logistic Regression,0.6726373479481352,0.6123895434462445,0.9064032697547684,0.7309382553284992,NO
+17,,,,1,Logistic Regression,0.7660740542708194,0.7317161477190441,0.8260217983651226,0.7760143350825547,YES
+18,,,,1,Random Forest,0.6478411977008421,0.6252570460868513,0.7042234332425068,0.662395079131159,NO
+19,,,,1,Random Forest,0.7475604865659671,0.745351879906349,0.7373297002724796,0.7413190877337169,YES
