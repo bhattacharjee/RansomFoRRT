@@ -572,7 +572,7 @@ def process_file_if_required(filename):
 #-------------------------------------------------------------------------------
 
 
-PARALLEL_JOBS = 4
+PARALLEL_JOBS = 8
 
 
 
