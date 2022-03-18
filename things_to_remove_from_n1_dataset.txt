@@ -1,0 +1,2 @@
+extended.base_filename contiaining 'password'
+extended.extension == ".rar" or ".7z" or ".gz" or ".zip" or ".bz2"
