@@ -5,98 +5,29 @@ export PATH=/usr/local/bin:$PATH
 
 function wait_for_completion()
 {
-    NUM_PROCS=55
-    while [[ $NUM_PROCS -ne 0 ]]; do
-        NUM_PROCS=`ps -ef | grep iterate.py |grep python| grep -v grep | grep -vw vim | grep -vw nvim | wc -l`
+    NUM_PROCS=`ps -ef | grep iterate.py | grep -v plaintext_or |grep python| grep -v grep | grep -vw vim | grep -vw nvim | wc -l`
+    while [[ $NUM_PROCS -ge 10 ]]; do
+        NUM_PROCS=`ps -ef | grep iterate.py | grep -v plaintext_or |grep python| grep -v grep | grep -vw vim | grep -vw nvim | wc -l`
         sleep 5
     done
 }
-for i in 0
-do
-    for j in ${i}*
-    do
-        ./iterate.py --directory $j &
+function wait_for_completion_all()
+{
+    NUM_PROCS=`ps -ef | grep iterate.py | grep -v plaintext_or |grep python| grep -v grep | grep -vw vim | grep -vw nvim | wc -l`
+    while [[ $NUM_PROCS -ne 0 ]]; do
+        NUM_PROCS=`ps -ef | grep iterate.py | grep -v plaintext_or |grep python| grep -v grep | grep -vw vim | grep -vw nvim | wc -l`
+        sleep 5
     done
-done
-wait_for_completion
+}
 
-for i in 1
-do
-    for j in ${i}*
-    do
-        ./iterate.py --directory $j &
-    done
-done
-wait_for_completion
+wait_for_completion_all
 
-for i in 2
+for j in *
 do
-    for j in ${i}*
-    do
+    if [[ -d $j ]]; then
         ./iterate.py --directory $j &
-    done
+        wait_for_completion
+    fi
 done
-wait_for_completion
 
-for i in 3
-do
-    for j in ${i}*
-    do
-        ./iterate.py --directory $j &
-    done
-done
-wait_for_completion
-
-for i in 4
-do
-    for j in ${i}*
-    do
-        ./iterate.py --directory $j &
-    done
-done
-wait_for_completion
-
-for i in 5
-do
-    for j in ${i}*
-    do
-        ./iterate.py --directory $j &
-    done
-done
-wait_for_completion
-
-for i in 6
-do
-    for j in ${i}*
-    do
-        ./iterate.py --directory $j &
-    done
-done
-wait_for_completion
-
-for i in 7
-do
-    for j in ${i}*
-    do
-        ./iterate.py --directory $j &
-    done
-done
-wait_for_completion
-
-for i in 8
-do
-    for j in ${i}*
-    do
-        ./iterate.py --directory $j &
-    done
-done
-wait_for_completion
-
-for i in 9
-do
-    for j in ${i}*
-    do
-        ./iterate.py --directory $j &
-    done
-done
-wait_for_completion
+wait_for_completion_all
