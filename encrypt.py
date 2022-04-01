@@ -17,6 +17,9 @@ import gc
 
 from array import array
 
+EXPAND_BUFFER_BEFORE_ENCRYPTION = True
+CUTOFF_SIZE = 1024 + 512
+
 def free_memory():
     gc.collect(0)
     gc.collect(1)
@@ -36,7 +39,11 @@ EXTREMITY_SIZE = (128 // 2)
 
 def readimage(path):
     with open(path, "rb") as f:
-        return bytearray(f.read())
+        thebytes = bytearray(f.read())
+        if EXPAND_BUFFER_BEFORE_ENCRYPTION:
+            while len(thebytes) < CUTOFF_SIZE:
+                thebytes = thebytes + thebytes
+        return thebytes
 
 def pad (data):
     pad = BLOCK_SIZE - len(data) % BLOCK_SIZE
