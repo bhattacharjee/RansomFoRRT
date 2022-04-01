@@ -18,7 +18,7 @@ import gc
 from array import array
 
 EXPAND_BUFFER_BEFORE_ENCRYPTION = True
-CUTOFF_SIZE = 1024 + 512
+CUTOFF_SIZE = 1024 + 1024
 
 def free_memory():
     gc.collect(0)
