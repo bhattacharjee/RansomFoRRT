@@ -299,6 +299,10 @@ def trim_dataset(
     if non_encrypted_count > 2 * encrypted_count:
         return None
 
+    for i in range(3):
+        for j in range(3):
+            gc.collect(i)
+
     return df
 
 
