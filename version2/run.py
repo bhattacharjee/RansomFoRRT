@@ -12,7 +12,16 @@ import numpy as np
 import pandas as pd
 
 
-def get_columns_and_types(thisdf) -> Dict[str, List[str]]:
+def get_columns_and_types(thisdf: pd.DataFrame) -> Dict[str, List[str]]:
+    """For each feature set type, get the relevant columns.
+
+    Args:
+        thisdf (pd.DataFrame): Input dataframe.
+
+    Returns:
+        Dict[str, List[str]]: Dictionary that maps the feature type to the
+            list of columns to the feature type.
+    """
     columns = [c for c in thisdf.columns if not c.startswith("an_")]
 
     baseline_columns = [
@@ -36,7 +45,9 @@ def get_columns_and_types(thisdf) -> Dict[str, List[str]]:
     advanced_columns_only = list(set(advanced_columns))
     advanced_columns = list(set(advanced_columns + baseline_columns))
 
-    fourier_columns = [c for c in columns if "fourier" in c and "value" not in c]
+    fourier_columns = [
+        c for c in columns if "fourier" in c and "value" not in c
+    ]
     fourier_columns = [c for c in fourier_columns if "1byte" in c]
     fourier_columns = [
         c for c in fourier_columns if "begin" not in c and "end" not in c
@@ -50,7 +61,9 @@ def get_columns_and_types(thisdf) -> Dict[str, List[str]]:
 
     baseline_and_advanced = list(set(baseline_columns + advanced_columns_only))
     baseline_and_fourier = list(set(baseline_columns + fourier_columns_only))
-    advanced_and_fourier = list(set(advanced_columns_only + fourier_columns_only))
+    advanced_and_fourier = list(
+        set(advanced_columns_only + fourier_columns_only)
+    )
 
     return {
         "baseline": baseline_columns,
@@ -64,7 +77,15 @@ def get_columns_and_types(thisdf) -> Dict[str, List[str]]:
     }
 
 
-def get_annotation_columns(thisdf) -> List(str):
+def get_annotation_columns(thisdf: pd.DataFrame) -> List(str):
+    """List of columns used for annotation.
+
+    Args:
+        thisdf (pd.DataFrame): Input dataframe.
+
+    Returns:
+        _type_: List of columns
+    """
     return [c for c in thisdf.columns if c.startswith("an_")]
 
 
@@ -124,7 +145,8 @@ def load_data(input_directory: str) -> pd.DataFrame:
         for f in glob.glob(f"{input_directory}/*.csv")
     }
     dataframes = {
-        n: annotate_df_with_additional_fields(n, df) for n, df in dataframes.items()
+        n: annotate_df_with_additional_fields(n, df)
+        for n, df in dataframes.items()
     }
     for n, df in dataframes.items():
         break
