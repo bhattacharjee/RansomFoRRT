@@ -12,6 +12,7 @@ import time
 from typing import Dict, List, Tuple
 
 import numpy as np
+import random
 import pandas as pd
 import tqdm
 from loguru import logger
@@ -21,6 +22,9 @@ from sklearn.linear_model import LogisticRegression
 
 # import dotenv
 
+def random_seed() -> None:
+    np.random.seed(0)
+    random.seed(0)
 
 def get_columns_and_types(thisdf: pd.DataFrame) -> Dict[str, List[str]]:
     """For each feature set type, get the relevant columns.
@@ -214,6 +218,7 @@ def evaluate_features(
     n_jobs: int,
     folds: int = -1,
 ) -> Tuple[bool, List[float]]:
+    random_seed()
     if folds != -1:
         return evaluate_features_folded(
             name=name,
@@ -302,9 +307,9 @@ def trim_dataset(
 
     if encrypted_count == 0 or non_encrypted_count == 0:
         return None
-    if encrypted_count > 3 * non_encrypted_count:
+    if encrypted_count > 2 * non_encrypted_count:
         return None
-    if non_encrypted_count > 3 * encrypted_count:
+    if non_encrypted_count > 2 * encrypted_count:
         return None
 
     return df
@@ -335,6 +340,8 @@ def evaluate(
     folds: int = -1,
 ) -> Tuple[bool, List[float]]:
     # This layer loops over the 54 different combinations
+    random_seed()
+
     list_of_combinations = [
         "exclude_plaintext_nonbase32",
         "exclude_plaintext_base32",
@@ -358,8 +365,9 @@ def evaluate(
 
     all_metrics = []
     for n, combination in tqdm.tqdm(
-        enumerate(combinations), desc="Combinations of file types:"
+        enumerate(combinations), desc=f"{name}: Combinations of file types:"
     ):
+        random_seed()
         message = " ".join(
             [f"{e1}:{e2}" for e1, e2 in zip(list_of_combinations, combination)]
         )
@@ -446,6 +454,8 @@ def main() -> None:
     )
     logger.add(sys.stderr, backtrace=True, diagnose=True, level="ERROR")
     logger.opt(colors=True).info(f"<blue>Running with {args}</>")
+
+    random_seed()
 
     data = load_data(args.input_directory)
     print(data[[c for c in data.columns if c.startswith("an")]].head())
