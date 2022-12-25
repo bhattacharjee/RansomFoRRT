@@ -153,18 +153,22 @@ def load_data(input_directory: str) -> pd.DataFrame:
         pd.DataFrame: A combined dataframe of all files
     """
     p = 0.01
+    logger.info("Loading dataframes")
     dataframes = {
         f: pd.read_csv(f, skiprows=lambda i: i > 0 and random.random() > p)
         for f in glob.glob(f"{input_directory}/*.csv.gz")
     }
+    logger.info("Annotating dataframes with additional fields")
     dataframes = {
         f: annotate_df_with_additional_fields(f, df)
         for f, df in dataframes.items()
     }
 
+    logger.info("Combining dataframes into a single dataframe")
     df = pd.concat([df for _, df in dataframes.items()])
 
     _ = [gc.collect(i) for i in range(3) for j in range(3) for k in range(3)]
+    logger.info("done...")
     return df
 
 
