@@ -99,7 +99,7 @@ def annotate_df_with_additional_fields(
     Returns:
         pd.DataFrame: Dataframe with additional information
     """
-    if "base32" in name:
+    if "base32" in name or "b32" in name:
         dataframe["an_is_base32"] = 1
     else:
         dataframe["an_is_base32"] = 0
