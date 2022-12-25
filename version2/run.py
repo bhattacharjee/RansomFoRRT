@@ -295,8 +295,8 @@ def main() -> None:
     ):
         temp_output_dir = f"{args.output_directory}/{fsname}"
         print_text = f"Processing {fsname} and writing into {temp_output_dir}"
-        logger.info(f"{print_text}")
-        logger.info(f"{'-' * len(print_text)}")
+        logger.opt(colors=True).info(f"<green>{print_text}</>")
+        logger.opt(colors=True).info(f"<green>{'-' * len(print_text)}</>")
 
         columns = copy.copy(fscolumns)
         columns += annot_columns
