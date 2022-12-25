@@ -8,6 +8,7 @@ import glob
 import os
 import random
 import time
+import dotenv
 from typing import Dict, List, Tuple
 
 import numpy as np
@@ -223,8 +224,28 @@ def evaluate_features(
             n_jobs=n_jobs,
         )
 
+def evaluate(
+    name: str,
+    data: pd.DataFrame,
+    output_directory: str,
+    feature_column_names: List[str],
+    annotation_columns: List[str],
+    n_jobs: int,
+    folds: int = -1,
+) -> Tuple[bool, List[float]]:
+    # This layer loops over the 54 different combinations
+    return evaluate_features(
+        name=name,
+        data=data,
+        output_directory=output_directory,
+        feature_column_names=feature_column_names,
+        annotation_columns=annotation_columns,
+        n_jobs=n_jobs,
+        folds=folds
+    )
 
 def main() -> None:
+    dotenv.load_dotenv()
     parser = argparse.ArgumentParser("Run experiments")
     parser.add_argument(
         "-i",
@@ -281,7 +302,7 @@ def main() -> None:
             os.mkdir(temp_output_dir)
         t1 = time.perf_counter()
         logger.info(f"Started evaluating feature set: {fsname}")
-        retval, metrics = evaluate_features(
+        retval, metrics = evaluate(
             name=fsname,
             data=data[columns].copy(),
             output_directory=temp_output_dir,
