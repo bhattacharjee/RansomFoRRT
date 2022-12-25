@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 
+import sys
 import argparse
 import copy
 import gc
@@ -8,8 +9,9 @@ import glob
 import os
 import random
 import time
-import dotenv
 from typing import Dict, List, Tuple
+
+# import dotenv
 
 import numpy as np
 import pandas as pd
@@ -110,30 +112,45 @@ def annotate_df_with_additional_fields(
         pd.DataFrame: Dataframe with additional information
     """
     if "base32" in name:
-        dataframe["base32"] = 1
+        dataframe["an_is_base32"] = 1
     else:
-        dataframe["base32"] = 0
-    dataframe["base32"] = dataframe["base32"].astype(np.int8)
-    if "is_encrypted" in name:
+        dataframe["an_is_base32"] = 0
+    dataframe["an_is_base32"] = dataframe["an_is_base32"].astype(np.int8)
+
+    if "encrypted" in name:
         dataframe["is_encrypted"] = 1
     else:
         dataframe["is_encrypted"] = 0
     dataframe["is_encrypted"] = dataframe["is_encrypted"].astype(np.int8)
-    if "_v0" in name:
-        dataframe["an_v0_encrypted"] = 1
-    else:
-        dataframe["an_v0_encrypted"] = 0
-    dataframe["an_v0_encrypted"] = dataframe["an_v0_encrypted"].astype(np.int8)
+
     if "_v1" in name:
         dataframe["an_v1_encrypted"] = 1
     else:
         dataframe["an_v1_encrypted"] = 0
     dataframe["an_v1_encrypted"] = dataframe["an_v1_encrypted"].astype(np.int8)
+
     if "_v2" in name:
         dataframe["an_v2_encrypted"] = 1
     else:
         dataframe["an_v2_encrypted"] = 0
     dataframe["an_v2_encrypted"] = dataframe["an_v2_encrypted"].astype(np.int8)
+
+    if "_v3" in name:
+        dataframe["an_v3_encrypted"] = 1
+    else:
+        dataframe["an_v3_encrypted"] = 0
+    dataframe["an_v3_encrypted"] = dataframe["an_v3_encrypted"].astype(np.int8)
+
+    def is_base32(filename: str) -> int:
+        return 1 if "base32" in filename else 0
+
+    def is_webp(filename: str) -> int:
+        return 1 if ".webp" in filename else 0
+
+    dataframe["an_is_webp"] = (
+        dataframe["extended.base_filename"].map(is_base32).astype(np.int8)
+    )
+
     return dataframe
 
 
@@ -153,11 +170,12 @@ def load_data(input_directory: str) -> pd.DataFrame:
         for f in glob.glob(f"{input_directory}/*.csv")
     }
     dataframes = {
-        n: annotate_df_with_additional_fields(n, df)
-        for n, df in dataframes.items()
+        f: annotate_df_with_additional_fields(f, df)
+        for f, df in dataframes.items()
     }
-    for n, df in dataframes.items():
-        break
+
+    df = pd.concat([df for _, df in dataframes.items()])
+
     _ = [gc.collect(i) for i in range(3) for j in range(3) for k in range(3)]
     return df
 
@@ -224,6 +242,80 @@ def evaluate_features(
             n_jobs=n_jobs,
         )
 
+def trim_dataset(
+    df:pd.DataFrame,
+    exclude_plaintext_nonbase32:bool=False,
+    exclude_plaintext_base32:bool=False,
+    exclude_encrypted_v1:bool=False,
+    exclude_encrypted_v2:bool=False,
+    exclude_encrypted_base32:bool=False,
+    exclude_encrypted_nonbase32:bool=False,
+    exclude_webp:bool=False,
+    exclude_nonwebp:bool=False
+):
+    df = df.copy()
+    logger.debug(f"0 ===> {len(df)}")
+    if exclude_plaintext_nonbase32:
+        selector = (~df["is_encrypted"].astype(np.bool8) & ~df["an_is_base32"].astype(np.bool8))
+        df = df[~selector]
+    logger.debug(f"1 ===> {len(df)}")
+    if exclude_plaintext_base32:
+        selector = (~df["is_encrypted"].astype(np.bool8) & df["an_is_base32"].astype(np.bool8))
+        df = df[~selector]
+    logger.debug(f"2 ===> {len(df)}")
+    if exclude_encrypted_v1:
+        selector = (df["an_v1_encrypted"].astype(np.bool8))
+        df = df[~selector]
+    logger.debug(f"3 ===> {len(df)}")
+    if exclude_encrypted_v2:
+        selector = (df["an_v2_encrypted"].astype(np.bool8))
+        df = df[~selector]
+    logger.debug(f"4 ===> {len(df)}")
+    if exclude_encrypted_base32:
+        selector = (df["is_encrypted"].astype(np.bool8) & df["an_is_base32"].astype(np.bool8))
+        df = df[~selector]
+    logger.debug(f"5 ===> {len(df)}")
+    if exclude_encrypted_nonbase32:
+        selector = (df["is_encrypted"].astype(np.bool8) & ~df["an_is_base32"].astype(np.bool8))
+        df = df[~selector]
+    logger.debug(f"6 ===> {len(df)}")
+    if exclude_webp:
+        selector = df["an_is_webp"].astype(np.bool8)
+        df = df[~selector]
+    logger.debug(f"7 ===> {len(df)}")
+    if exclude_nonwebp:
+        selector = ~df["an_is_webp"].astype(np.bool8)
+        df = df[~selector]
+    logger.debug(f"8 ===> {len(df)}")
+
+    non_encrypted_count = (~df["is_encrypted"]).astype(np.int8).abs().sum()
+    encrypted_count = df["is_encrypted"].astype(np.int8).abs().sum()
+
+    logger.info(f"Encrypted: {encrypted_count} Non-Encrypted: {non_encrypted_count}")
+
+    if encrypted_count == 0 or non_encrypted_count == 0:
+        return None
+    if encrypted_count > 2 * non_encrypted_count:
+        return None
+    if non_encrypted_count > 2 * encrypted_count:
+        return None
+
+
+    return df
+
+def combine_metrics(list_of_lists: List[List[float]]) -> List[float]:
+    if len(list_of_lists) == 0:
+        return []
+    logger.info(list_of_lists)
+    outlist = [0.0 * len(list_of_lists[0])]
+    count = 0
+    for l in list_of_lists:
+        count += 1
+        for i in range(len(l)):
+            outlist[i] += l[i]
+    for i in range(len(outlist)):
+        outlist[i] /= count
+    return outlist
 
 def evaluate(
     name: str,
@@ -235,19 +327,58 @@ def evaluate(
     folds: int = -1,
 ) -> Tuple[bool, List[float]]:
     # This layer loops over the 54 different combinations
-    return evaluate_features(
-        name=name,
-        data=data,
-        output_directory=output_directory,
-        feature_column_names=feature_column_names,
-        annotation_columns=annotation_columns,
-        n_jobs=n_jobs,
-        folds=folds,
-    )
+    list_of_combinations = [
+        "exclude_plaintext_nonbase32",
+        "exclude_plaintext_base32",
+        "exclude_encrypted_v1",
+        "exclude_encrypted_v2",
+        "exclude_encrypted_base32",
+        "exclude_encrypted_nonbase32",
+        "exclude_webp",
+        "exclude_nonwebp"
+    ]
+
+    combinations = [(True,), (False,)]
+    for i in range(7):
+        temp = []
+        for e in combinations:
+            et = e + (True,)
+            temp.append(et)
+            et = e + (False,)
+            temp.append(et)
+        combinations = temp
+
+    all_metrics = []
+    for n, combination in tqdm.tqdm(enumerate(combinations)):
+        message = " ".join([f"{e1}:{e2}" for e1, e2 in zip(list_of_combinations, combination)])
+        logger.opt(colors=True).info("<yellow>- - - - - - - - - - - - - - - - - - - - - </>")
+        logger.opt(colors=True).info(f"Combination {n:02d}: {message}")
+        temp_data = trim_dataset(data, *combination)
+        if temp_data is not None:
+            temp_dir = output_directory + os.path.sep + f"run-{n}"
+            if not os.path.exists(temp_dir):
+                os.mkdir(temp_dir)
+            success, metric = evaluate_features(
+                name=name,
+                data=temp_data,
+                output_directory=temp_dir,
+                feature_column_names=feature_column_names,
+                annotation_columns=annotation_columns,
+                n_jobs=n_jobs,
+                folds=folds,
+            )
+            if not success:
+                logger.error("Fatal: Failed to process")
+                raise Exception("Failed in execution")
+                return False, []
+        else:
+            logger.info(f"Combination {n:02d} had no elements")
+
+    return True, combine_metrics(all_metrics)
 
 
 def main() -> None:
-    dotenv.load_dotenv()
+    # dotenv.load_dotenv()
     parser = argparse.ArgumentParser("Run experiments")
     parser.add_argument(
         "-i",
@@ -283,10 +414,16 @@ def main() -> None:
     log_file = f"{args.output_directory}/log.log"
     if os.path.exists(log_file):
         os.unlink(log_file)
-    logger.add(log_file, backtrace=True, diagnose=True)
+    if os.path.exists(f"{log_file}.debug.log"):
+        os.unlink(f"{log_file}.debug.log")
+    logger.remove()
+    logger.add(log_file, backtrace=True, diagnose=True, level="INFO")
+    logger.add(f"{log_file}.debug.log", backtrace=True, diagnose=True, level="DEBUG")
+    logger.add(sys.stderr, backtrace=True, diagnose=True, level="INFO")
     logger.opt(colors=True).info(f"<blue>Running with {args}</>")
 
     data = load_data(args.input_directory)
+    print(data[[c for c in data.columns if c.startswith("an")]].head())
 
     annot_columns = get_annotation_columns(data)
 
@@ -323,7 +460,7 @@ def main() -> None:
             "<green>*******************************************************</>"
         )
         for i in range(3):
-            for j in range(3): 
+            for j in range(3):
                 gc.collect(i)
         if not retval:
             logger.error(
@@ -335,3 +472,15 @@ def main() -> None:
 
 if "__main__" == __name__:
     main()
+
+
+_ = """
+exclude_plaintext_nonbase32	
+exclude_plaintext_base32	
+exclude_encrypted_v1	
+exclude_encrypted_v2	
+exclude_encrypted_base32	
+exclude_encrypted_nonbase32	
+exclude_webp	
+exclude_nonwebp	
+"""
