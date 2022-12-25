@@ -2,14 +2,21 @@
 
 
 import argparse
+import copy
 import gc
 import glob
 import os
 import random
-from typing import Dict, List
+import time
+from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
+import tqdm
+from loguru import logger
+from sklearn import pipeline
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 
 
 def get_columns_and_types(thisdf: pd.DataFrame) -> Dict[str, List[str]]:
@@ -77,7 +84,7 @@ def get_columns_and_types(thisdf: pd.DataFrame) -> Dict[str, List[str]]:
     }
 
 
-def get_annotation_columns(thisdf: pd.DataFrame) -> List(str):
+def get_annotation_columns(thisdf: pd.DataFrame) -> List[str]:
     """List of columns used for annotation.
 
     Args:
@@ -106,11 +113,11 @@ def annotate_df_with_additional_fields(
     else:
         dataframe["base32"] = 0
     dataframe["base32"] = dataframe["base32"].astype(np.int8)
-    if "encrypted" in name:
-        dataframe["encrypted"] = 1
+    if "is_encrypted" in name:
+        dataframe["is_encrypted"] = 1
     else:
-        dataframe["encrypted"] = 0
-    dataframe["encrypted"] = dataframe["encrypted"].astype(np.int8)
+        dataframe["is_encrypted"] = 0
+    dataframe["is_encrypted"] = dataframe["is_encrypted"].astype(np.int8)
     if "_v0" in name:
         dataframe["an_v0_encrypted"] = 1
     else:
@@ -154,10 +161,91 @@ def load_data(input_directory: str) -> pd.DataFrame:
     return df
 
 
+def get_pipeline(X: pd.DataFrame, n_jobs: int = 4) -> pipeline.Pipeline:
+    pipe = pipeline.Pipeline(
+        [("classif", RandomForestClassifier(n_jobs=n_jobs))]
+    )
+    return pipe
+
+
+def evaluate_features_folded(
+    name: str,
+    data: pd.DataFrame,
+    output_directory: str,
+    feature_column_names: List[str],
+    annotation_columns: List[str],
+    n_jobs: int,
+    folds: int = -1,
+) -> Tuple[bool, List[float]]:
+    return True, []
+
+
+def evaluate_features_regular(
+    name: str,
+    data: pd.DataFrame,
+    output_directory: str,
+    feature_column_names: List[str],
+    annotation_columns: List[str],
+    n_jobs: int,
+) -> Tuple[bool, List[float]]:
+    X = data[feature_column_names]
+    y = data["is_encrypted"]
+    pline = get_pipeline(X, n_jobs=n_jobs)
+    return True, []
+
+
+def evaluate_features(
+    name: str,
+    data: pd.DataFrame,
+    output_directory: str,
+    feature_column_names: List[str],
+    annotation_columns: List[str],
+    n_jobs: int,
+    folds: int = -1,
+) -> Tuple[bool, List[float]]:
+    if folds != -1:
+        return evaluate_features_folded(
+            name=name,
+            data=data,
+            output_directory=output_directory,
+            feature_column_names=feature_column_names,
+            annotation_columns=annotation_columns,
+            n_jobs=n_jobs,
+            folds=folds,
+        )
+    else:
+        return evaluate_features_regular(
+            name=name,
+            data=data,
+            output_directory=output_directory,
+            feature_column_names=feature_column_names,
+            annotation_columns=annotation_columns,
+            n_jobs=n_jobs,
+        )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser("Run experiments")
-    parser.add_argument("-i", "--input-directory", type=str, required=True)
-    parser.add_argument("-o", "--output-directory", type=str, required=True)
+    parser.add_argument(
+        "-i",
+        "--input-directory",
+        type=str,
+        required=True,
+        help="Input directory for data files.",
+    )
+    parser.add_argument(
+        "-o",
+        "--output-directory",
+        type=str,
+        required=True,
+        help="Output directory.",
+    )
+    parser.add_argument(
+        "-n", "--n-jobs", type=int, default=4, help="Number of jobs to run."
+    )
+    parser.add_argument(
+        "-nf", "--n-folds", type=int, default=-1, help="Folds to run for"
+    )
     args = parser.parse_args()
 
     if not os.path.exists(args.input_directory) or not os.path.isdir(
@@ -169,7 +257,49 @@ def main() -> None:
     ):
         raise Exception(f"Path {args.output_directory} does not exist")
 
+    log_file = f"{args.output_directory}/log.log"
+    if os.path.exists(log_file):
+        os.unlink(log_file)
+    logger.add(log_file, backtrace=True, diagnose=True)
+
     data = load_data(args.input_directory)
+
+    annot_columns = get_annotation_columns(data)
+
+    for fsname, fscolumns in tqdm.tqdm(get_columns_and_types(data).items()):
+        temp_output_dir = f"{args.output_directory}/{fsname}"
+        print_text = f"Processing {fsname} and writing into {temp_output_dir}"
+        logger.info(f"{print_text}")
+        logger.info(f"{'-' * len(print_text)}")
+
+        columns = copy.copy(fscolumns)
+        columns += annot_columns
+        columns += ["is_encrypted"]
+
+        if not os.path.exists(temp_output_dir):
+            os.mkdir(temp_output_dir)
+        t1 = time.perf_counter()
+        logger.info(f"Started evaluating feature set: {fsname}")
+        retval, metrics = evaluate_features(
+            name=fsname,
+            data=data[columns].copy(),
+            output_directory=temp_output_dir,
+            feature_column_names=fscolumns,
+            annotation_columns=annot_columns,
+            n_jobs=args.n_jobs,
+            folds=args.n_folds,
+        )
+        t2 = time.perf_counter()
+        logger.info(f"Completed running feature {fsname} in {t2 - t1} seconds")
+        logger.opt(colors=True).info(
+            "<green>*******************************************************</>"
+        )
+        if not retval:
+            logger.error(
+                f"Error evaluating feature set '{fsname}', metrics = {metrics}"
+            )
+            break
+        logger.opt(colors=True).info(f"<magenta>{fsname} : {metrics}</>")
 
 
 if "__main__" == __name__:
