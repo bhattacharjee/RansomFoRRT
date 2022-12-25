@@ -49,6 +49,10 @@ def get_columns_and_types(thisdf) -> Dict[str, List[str]]:
         "fourier": fourier_columns,
     }
 
+def get_annotation_columns(thisdf) -> List(str):
+    return [c for c in thisdf.columns if c.startswith("an_")]
+
+
 def annotate_df_with_additional_fields(
     name: str, dataframe: pd.DataFrame
 ) -> pd.DataFrame:
@@ -72,20 +76,20 @@ def annotate_df_with_additional_fields(
         dataframe["encrypted"] = 0
     dataframe["encrypted"] = dataframe["encrypted"].astype(np.int8)
     if "_v0" in name:
-        dataframe["v0_encrypted"] = 1
+        dataframe["an_v0_encrypted"] = 1
     else:
-        dataframe["v0_encrypted"] = 0
-    dataframe["v0_encrypted"] = dataframe["v0_encrypted"].astype(np.int8)
+        dataframe["an_v0_encrypted"] = 0
+    dataframe["an_v0_encrypted"] = dataframe["an_v0_encrypted"].astype(np.int8)
     if "_v1" in name:
-        dataframe["v1_encrypted"] = 1
+        dataframe["an_v1_encrypted"] = 1
     else:
-        dataframe["v1_encrypted"] = 0
-    dataframe["v1_encrypted"] = dataframe["v1_encrypted"].astype(np.int8)
+        dataframe["an_v1_encrypted"] = 0
+    dataframe["an_v1_encrypted"] = dataframe["an_v1_encrypted"].astype(np.int8)
     if "_v2" in name:
-        dataframe["v2_encrypted"] = 1
+        dataframe["an_v2_encrypted"] = 1
     else:
-        dataframe["v2_encrypted"] = 0
-    dataframe["v2_encrypted"] = dataframe["v2_encrypted"].astype(np.int8)
+        dataframe["an_v2_encrypted"] = 0
+    dataframe["an_v2_encrypted"] = dataframe["an_v2_encrypted"].astype(np.int8)
     return dataframe
 
 
@@ -111,6 +115,7 @@ def load_data(input_directory: str) -> pd.DataFrame:
         break
     _ = [gc.collect(i) for i in range(3) for j in range(3) for k in range(3)]
     return df
+
 
 
 def main() -> None:
