@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
 
 
-import sys
 import argparse
 import copy
 import gc
 import glob
 import os
 import random
+import sys
 import time
 from typing import Dict, List, Tuple
-
-# import dotenv
 
 import numpy as np
 import pandas as pd
@@ -20,6 +18,9 @@ from loguru import logger
 from sklearn import pipeline
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
+
+# import dotenv
+
 
 
 def get_columns_and_types(thisdf: pd.DataFrame) -> Dict[str, List[str]]:
@@ -34,56 +35,44 @@ def get_columns_and_types(thisdf: pd.DataFrame) -> Dict[str, List[str]]:
     """
     columns = [c for c in thisdf.columns if not c.startswith("an_")]
 
-    baseline_columns = [
-        c
-        for c in columns
-        if c.startswith("baseline") and "head" not in c and "tail" not in c
-    ]
-    baseline_columns = [c for c in baseline_columns if "filesize" not in c]
-    baseline_columns = [
-        c for c in baseline_columns if "begin" not in c and "end" not in c
-    ]
+    def get_columns(columns: List[str], start_string: str) -> List[str]:
+        columns = [c for c in columns if c.startswith(start_string)]
+        columns = [c for c in columns if "head" not in c and "tail" not in c]
+        columns = [c for c in columns if "begin" not in c and "end" not in c]
+        columns = [c for c in columns if "filesize" not in c]
+        return columns
 
-    advanced_columns = [c for c in columns if "advanced" in c]
-    advanced_columns = [
-        c for c in advanced_columns if "begin" not in c and "end" not in c
-    ]
-    advanced_columns = [
-        c for c in advanced_columns if "head" not in c and "tail" not in c
-    ]
-    advanced_columns = [c for c in advanced_columns if "start" not in c]
-    advanced_columns_only = list(set(advanced_columns))
-    advanced_columns = list(set(advanced_columns + baseline_columns))
+    baseline_columns = get_columns(columns, "baseline")
+    advanced_columns = get_columns(columns, "advanced")
+    fourier_columns = get_columns(columns, "fourier")
 
-    fourier_columns = [
-        c for c in columns if "fourier" in c and "value" not in c
-    ]
-    fourier_columns = [c for c in fourier_columns if "1byte" in c]
-    fourier_columns = [
-        c for c in fourier_columns if "begin" not in c and "end" not in c
-    ]
-    fourier_columns = [
-        c for c in fourier_columns if "head" not in c and "tail" not in c
-    ]
-    fourier_columns = [c for c in fourier_columns if "start" not in c]
-    fourier_columns_only = list(set(fourier_columns))
-    fourier_columns = list(set(advanced_columns + fourier_columns))
+    baseline_and_advanced = list(set(baseline_columns + advanced_columns))
+    baseline_and_fourier = list(set(baseline_columns + fourier_columns))
+    advanced_and_fourier = list(set(advanced_columns + fourier_columns))
 
-    baseline_and_advanced = list(set(baseline_columns + advanced_columns_only))
-    baseline_and_fourier = list(set(baseline_columns + fourier_columns_only))
-    advanced_and_fourier = list(
-        set(advanced_columns_only + fourier_columns_only)
+    baseline_advanced_fourier = list(
+        set(baseline_columns + advanced_columns + fourier_columns)
+    )
+    logger.info(
+        {
+            "baseline-only": baseline_columns,
+            "advanced-only": advanced_columns,
+            "fourier-only": fourier_columns,
+            "baseline-and-fourier": baseline_and_fourier,
+            "baseline-and-advanced": baseline_and_advanced,
+            "advanced-and-fourier": advanced_and_fourier,
+            "baseline-advanced-and-fourier": baseline_advanced_fourier,
+        }
     )
 
     return {
-        "baseline": baseline_columns,
-        "advanced-only": advanced_columns_only,
-        "fourier-only": fourier_columns_only,
+        "baseline-only": baseline_columns,
+        "advanced-only": advanced_columns,
+        "fourier-only": fourier_columns,
         "baseline-and-fourier": baseline_and_fourier,
         "baseline-and-advanced": baseline_and_advanced,
         "advanced-and-fourier": advanced_and_fourier,
-        "advanced": advanced_columns,
-        "fourier": fourier_columns,
+        "baseline-advanced-and-fourier": baseline_advanced_fourier,
     }
 
 
@@ -242,41 +231,50 @@ def evaluate_features(
             n_jobs=n_jobs,
         )
 
+
 def trim_dataset(
-    df:pd.DataFrame,
-    exclude_plaintext_nonbase32:bool=False,
-    exclude_plaintext_base32:bool=False,
-    exclude_encrypted_v1:bool=False,
-    exclude_encrypted_v2:bool=False,
-    exclude_encrypted_base32:bool=False,
-    exclude_encrypted_nonbase32:bool=False,
-    exclude_webp:bool=False,
-    exclude_nonwebp:bool=False
+    df: pd.DataFrame,
+    exclude_plaintext_nonbase32: bool = False,
+    exclude_plaintext_base32: bool = False,
+    exclude_encrypted_v1: bool = False,
+    exclude_encrypted_v2: bool = False,
+    exclude_encrypted_base32: bool = False,
+    exclude_encrypted_nonbase32: bool = False,
+    exclude_webp: bool = False,
+    exclude_nonwebp: bool = False,
 ):
     df = df.copy()
     logger.debug(f"0 ===> {len(df)}")
     if exclude_plaintext_nonbase32:
-        selector = (~df["is_encrypted"].astype(np.bool8) & ~df["an_is_base32"].astype(np.bool8))
+        selector = ~df["is_encrypted"].astype(np.bool8) & ~df[
+            "an_is_base32"
+        ].astype(np.bool8)
         df = df[~selector]
     logger.debug(f"1 ===> {len(df)}")
     if exclude_plaintext_base32:
-        selector = (~df["is_encrypted"].astype(np.bool8) & df["an_is_base32"].astype(np.bool8))
+        selector = ~df["is_encrypted"].astype(np.bool8) & df[
+            "an_is_base32"
+        ].astype(np.bool8)
         df = df[~selector]
     logger.debug(f"2 ===> {len(df)}")
     if exclude_encrypted_v1:
-        selector = (df["an_v1_encrypted"].astype(np.bool8))
+        selector = df["an_v1_encrypted"].astype(np.bool8)
         df = df[~selector]
     logger.debug(f"3 ===> {len(df)}")
     if exclude_encrypted_v2:
-        selector = (df["an_v2_encrypted"].astype(np.bool8))
+        selector = df["an_v2_encrypted"].astype(np.bool8)
         df = df[~selector]
     logger.debug(f"4 ===> {len(df)}")
     if exclude_encrypted_base32:
-        selector = (df["is_encrypted"].astype(np.bool8) & df["an_is_base32"].astype(np.bool8))
+        selector = df["is_encrypted"].astype(np.bool8) & df[
+            "an_is_base32"
+        ].astype(np.bool8)
         df = df[~selector]
     logger.debug(f"5 ===> {len(df)}")
     if exclude_encrypted_nonbase32:
-        selector = (df["is_encrypted"].astype(np.bool8) & ~df["an_is_base32"].astype(np.bool8))
+        selector = df["is_encrypted"].astype(np.bool8) & ~df[
+            "an_is_base32"
+        ].astype(np.bool8)
         df = df[~selector]
     logger.debug(f"6 ===> {len(df)}")
     if exclude_webp:
@@ -291,7 +289,9 @@ def trim_dataset(
     non_encrypted_count = (~df["is_encrypted"]).astype(np.int8).abs().sum()
     encrypted_count = df["is_encrypted"].astype(np.int8).abs().sum()
 
-    logger.info(f"Encrypted: {encrypted_count} Non-Encrypted: {non_encrypted_count}")
+    logger.info(
+        f"Encrypted: {encrypted_count} Non-Encrypted: {non_encrypted_count}"
+    )
 
     if encrypted_count == 0 or non_encrypted_count == 0:
         return None
@@ -300,8 +300,8 @@ def trim_dataset(
     if non_encrypted_count > 2 * encrypted_count:
         return None
 
-
     return df
+
 
 def combine_metrics(list_of_lists: List[List[float]]) -> List[float]:
     if len(list_of_lists) == 0:
@@ -309,13 +309,14 @@ def combine_metrics(list_of_lists: List[List[float]]) -> List[float]:
     logger.info(list_of_lists)
     outlist = [0.0 * len(list_of_lists[0])]
     count = 0
-    for l in list_of_lists:
+    for thelist in list_of_lists:
         count += 1
-        for i in range(len(l)):
-            outlist[i] += l[i]
+        for i in range(len(thelist)):
+            outlist[i] += thelist[i]
     for i in range(len(outlist)):
         outlist[i] /= count
     return outlist
+
 
 def evaluate(
     name: str,
@@ -335,7 +336,7 @@ def evaluate(
         "exclude_encrypted_base32",
         "exclude_encrypted_nonbase32",
         "exclude_webp",
-        "exclude_nonwebp"
+        "exclude_nonwebp",
     ]
 
     combinations = [(True,), (False,)]
@@ -350,8 +351,12 @@ def evaluate(
 
     all_metrics = []
     for n, combination in tqdm.tqdm(enumerate(combinations)):
-        message = " ".join([f"{e1}:{e2}" for e1, e2 in zip(list_of_combinations, combination)])
-        logger.opt(colors=True).info("<yellow>- - - - - - - - - - - - - - - - - - - - - </>")
+        message = " ".join(
+            [f"{e1}:{e2}" for e1, e2 in zip(list_of_combinations, combination)]
+        )
+        logger.opt(colors=True).info(
+            "<yellow>- - - - - - - - - - - - - - - - - - - - - </>"
+        )
         logger.opt(colors=True).info(f"Combination {n:02d}: {message}")
         temp_data = trim_dataset(data, *combination)
         if temp_data is not None:
@@ -418,7 +423,9 @@ def main() -> None:
         os.unlink(f"{log_file}.debug.log")
     logger.remove()
     logger.add(log_file, backtrace=True, diagnose=True, level="INFO")
-    logger.add(f"{log_file}.debug.log", backtrace=True, diagnose=True, level="DEBUG")
+    logger.add(
+        f"{log_file}.debug.log", backtrace=True, diagnose=True, level="DEBUG"
+    )
     logger.add(sys.stderr, backtrace=True, diagnose=True, level="INFO")
     logger.opt(colors=True).info(f"<blue>Running with {args}</>")
 
@@ -472,15 +479,3 @@ def main() -> None:
 
 if "__main__" == __name__:
     main()
-
-
-_ = """
-exclude_plaintext_nonbase32	
-exclude_plaintext_base32	
-exclude_encrypted_v1	
-exclude_encrypted_v2	
-exclude_encrypted_base32	
-exclude_encrypted_nonbase32	
-exclude_webp	
-exclude_nonwebp	
-"""
