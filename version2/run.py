@@ -302,9 +302,9 @@ def trim_dataset(
 
     if encrypted_count == 0 or non_encrypted_count == 0:
         return None
-    if encrypted_count > 2 * non_encrypted_count:
+    if encrypted_count > 3 * non_encrypted_count:
         return None
-    if non_encrypted_count > 2 * encrypted_count:
+    if non_encrypted_count > 3 * encrypted_count:
         return None
 
     return df
@@ -357,7 +357,9 @@ def evaluate(
         combinations = temp
 
     all_metrics = []
-    for n, combination in tqdm.tqdm(enumerate(combinations)):
+    for n, combination in tqdm.tqdm(
+        enumerate(combinations), desc="Combinations of file types:"
+    ):
         message = " ".join(
             [f"{e1}:{e2}" for e1, e2 in zip(list_of_combinations, combination)]
         )
@@ -367,7 +369,9 @@ def evaluate(
         logger.opt(colors=True).info(f"Combination {n:02d}: {message}")
         temp_data = trim_dataset(data, *combination)
         if temp_data is not None:
-            logger.info(f"Processing Combination {n:02d} combination = {message}")
+            logger.info(
+                f"Processing Combination {n:02d} combination = {message}"
+            )
             temp_dir = output_directory + os.path.sep + f"run-{n}"
             if not os.path.exists(temp_dir):
                 os.mkdir(temp_dir)
@@ -440,7 +444,7 @@ def main() -> None:
     logger.add(
         f"{log_file}.debug.log", backtrace=True, diagnose=True, level="DEBUG"
     )
-    logger.add(sys.stderr, backtrace=True, diagnose=True, level="INFO")
+    logger.add(sys.stderr, backtrace=True, diagnose=True, level="ERROR")
     logger.opt(colors=True).info(f"<blue>Running with {args}</>")
 
     data = load_data(args.input_directory)
@@ -448,8 +452,9 @@ def main() -> None:
 
     annot_columns = get_annotation_columns(data)
 
-    for n, (fsname, fscolumns) in enumerate(
-        tqdm.tqdm(get_columns_and_types(data).items())
+    for n, (fsname, fscolumns) in tqdm.tqdm(
+        enumerate(get_columns_and_types(data).items()),
+        desc="Iterating through feature sets",
     ):
         temp_output_dir = f"{args.output_directory}/{fsname}"
         print_text = f"Processing {fsname} and writing into {temp_output_dir}"
