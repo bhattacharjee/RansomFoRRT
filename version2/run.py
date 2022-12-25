@@ -367,7 +367,7 @@ def evaluate(
         logger.opt(colors=True).info(f"Combination {n:02d}: {message}")
         temp_data = trim_dataset(data, *combination)
         if temp_data is not None:
-            logger.info(f"Processing Combination {n:02d}")
+            logger.info(f"Processing Combination {n:02d} combination = {message}")
             temp_dir = output_directory + os.path.sep + f"run-{n}"
             if not os.path.exists(temp_dir):
                 os.mkdir(temp_dir)
