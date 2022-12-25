@@ -155,7 +155,7 @@ def load_data(input_directory: str) -> pd.DataFrame:
     p = 0.01
     dataframes = {
         f: pd.read_csv(f, skiprows=lambda i: i > 0 and random.random() > p)
-        for f in glob.glob(f"{input_directory}/*.csv")
+        for f in glob.glob(f"{input_directory}/*.csv.gz")
     }
     dataframes = {
         f: annotate_df_with_additional_fields(f, df)
