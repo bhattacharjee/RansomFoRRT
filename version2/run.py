@@ -224,6 +224,7 @@ def evaluate_features(
             n_jobs=n_jobs,
         )
 
+
 def evaluate(
     name: str,
     data: pd.DataFrame,
@@ -241,8 +242,9 @@ def evaluate(
         feature_column_names=feature_column_names,
         annotation_columns=annotation_columns,
         n_jobs=n_jobs,
-        folds=folds
+        folds=folds,
     )
+
 
 def main() -> None:
     dotenv.load_dotenv()
@@ -288,7 +290,9 @@ def main() -> None:
 
     annot_columns = get_annotation_columns(data)
 
-    for fsname, fscolumns in tqdm.tqdm(get_columns_and_types(data).items()):
+    for n, (fsname, fscolumns) in enumerate(
+        tqdm.tqdm(get_columns_and_types(data).items())
+    ):
         temp_output_dir = f"{args.output_directory}/{fsname}"
         print_text = f"Processing {fsname} and writing into {temp_output_dir}"
         logger.info(f"{print_text}")
@@ -301,7 +305,7 @@ def main() -> None:
         if not os.path.exists(temp_output_dir):
             os.mkdir(temp_output_dir)
         t1 = time.perf_counter()
-        logger.info(f"Started evaluating feature set: {fsname}")
+        logger.info(f"{n:02d}. Started evaluating feature set: {fsname}")
         retval, metrics = evaluate(
             name=fsname,
             data=data[columns].copy(),
@@ -312,7 +316,9 @@ def main() -> None:
             folds=args.n_folds,
         )
         t2 = time.perf_counter()
-        logger.info(f"Completed running feature {fsname} in {t2 - t1} seconds")
+        logger.info(
+            f"{n:02d}. Completed running feature {fsname} in {t2 - t1} seconds"
+        )
         logger.opt(colors=True).info(
             "<green>*******************************************************</>"
         )
