@@ -12,32 +12,47 @@ import pandas as pd
 
 from typing import Dict, List
 
+
 def get_columns_and_types(thisdf) -> Dict[str, List[str]]:
     columns = [c for c in thisdf.columns if not c.startswith("an_")]
 
-    baseline_columns = [c for c in columns if c.startswith('baseline') and "head" not in c and "tail" not in c]
+    baseline_columns = [
+        c
+        for c in columns
+        if c.startswith("baseline") and "head" not in c and "tail" not in c
+    ]
     baseline_columns = [c for c in baseline_columns if "filesize" not in c]
-    baseline_columns = [c for c in baseline_columns if "begin" not in c and "end" not in c]
+    baseline_columns = [
+        c for c in baseline_columns if "begin" not in c and "end" not in c
+    ]
 
     advanced_columns = [c for c in columns if "advanced" in c]
-    advanced_columns = [c for c in advanced_columns if "begin" not in c and "end" not in c]
-    advanced_columns = [c for c in advanced_columns if "head" not in c and "tail" not in c]
+    advanced_columns = [
+        c for c in advanced_columns if "begin" not in c and "end" not in c
+    ]
+    advanced_columns = [
+        c for c in advanced_columns if "head" not in c and "tail" not in c
+    ]
     advanced_columns = [c for c in advanced_columns if "start" not in c]
     advanced_columns_only = list(set(advanced_columns))
     advanced_columns = list(set(advanced_columns + baseline_columns))
 
     fourier_columns = [c for c in columns if "fourier" in c and "value" not in c]
     fourier_columns = [c for c in fourier_columns if "1byte" in c]
-    fourier_columns = [c for c in fourier_columns if "begin" not in c and "end" not in c]
-    fourier_columns = [c for c in fourier_columns if "head" not in c and "tail" not in c]
+    fourier_columns = [
+        c for c in fourier_columns if "begin" not in c and "end" not in c
+    ]
+    fourier_columns = [
+        c for c in fourier_columns if "head" not in c and "tail" not in c
+    ]
     fourier_columns = [c for c in fourier_columns if "start" not in c]
     fourier_columns_only = list(set(fourier_columns))
     fourier_columns = list(set(advanced_columns + fourier_columns))
-    
+
     baseline_and_advanced = list(set(baseline_columns + advanced_columns_only))
     baseline_and_fourier = list(set(baseline_columns + fourier_columns_only))
     advanced_and_fourier = list(set(advanced_columns_only + fourier_columns_only))
-    
+
     return {
         "baseline": baseline_columns,
         "advanced-only": advanced_columns_only,
@@ -48,6 +63,7 @@ def get_columns_and_types(thisdf) -> Dict[str, List[str]]:
         "advanced": advanced_columns,
         "fourier": fourier_columns,
     }
+
 
 def get_annotation_columns(thisdf) -> List(str):
     return [c for c in thisdf.columns if c.startswith("an_")]
@@ -115,7 +131,6 @@ def load_data(input_directory: str) -> pd.DataFrame:
         break
     _ = [gc.collect(i) for i in range(3) for j in range(3) for k in range(3)]
     return df
-
 
 
 def main() -> None:
