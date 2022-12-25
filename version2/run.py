@@ -423,7 +423,7 @@ def main() -> None:
     if not os.path.exists(args.output_directory) or not os.path.isdir(
         args.output_directory
     ):
-        raise Exception(f"Path {args.output_directory} does not exist")
+        os.mkdir(args.output_directory)
 
     log_file = f"{args.output_directory}/log.log"
     if os.path.exists(log_file):
