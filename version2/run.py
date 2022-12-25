@@ -6,11 +6,10 @@ import gc
 import glob
 import os
 import random
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
-
-from typing import Dict, List
 
 
 def get_columns_and_types(thisdf) -> Dict[str, List[str]]:
