@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "python": "/Users/phantom/opt/anaconda3/bin/python3",
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": ["-i", "${workspaceFolder}", "-o", "${workspaceFolder}"]
+        }
+    ]
+}
