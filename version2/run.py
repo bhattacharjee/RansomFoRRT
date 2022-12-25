@@ -261,6 +261,7 @@ def main() -> None:
     if os.path.exists(log_file):
         os.unlink(log_file)
     logger.add(log_file, backtrace=True, diagnose=True)
+    logger.opt(colors=True).info(f"<blue>Running with {args}</>")
 
     data = load_data(args.input_directory)
 
