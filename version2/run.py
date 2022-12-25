@@ -372,8 +372,14 @@ def evaluate(
                 folds=folds,
             )
             if not success:
-                logger.error("Fatal: Failed to process")
-                raise Exception("Failed in execution")
+                logger.error(
+                    f"Fatal: Failed to process iteration {n} ... "
+                    f"combination = {message}"
+                )
+                raise Exception(
+                    f"Fatal: Failed to process iteration {n} ... "
+                    f"combination = {message}"
+                )
                 return False, []
         else:
             logger.info(f"Combination {n:02d} had no elements")
