@@ -22,7 +22,6 @@ from sklearn.linear_model import LogisticRegression
 # import dotenv
 
 
-
 def get_columns_and_types(thisdf: pd.DataFrame) -> Dict[str, List[str]]:
     """For each feature set type, get the relevant columns.
 
@@ -449,7 +448,14 @@ def main() -> None:
         if not os.path.exists(temp_output_dir):
             os.mkdir(temp_output_dir)
         t1 = time.perf_counter()
+
         logger.info(f"{n:02d}. Started evaluating feature set: {fsname}")
+        logid = logger.add(
+            temp_output_dir + os.path.sep + "log.log",
+            backtrace=True,
+            diagnose=True,
+            level="INFO",
+        )
         retval, metrics = evaluate(
             name=fsname,
             data=data[columns].copy(),
@@ -459,6 +465,8 @@ def main() -> None:
             n_jobs=args.n_jobs,
             folds=args.n_folds,
         )
+        logger.remove(logid)
+
         t2 = time.perf_counter()
         logger.info(
             f"{n:02d}. Completed running feature {fsname} in {t2 - t1} seconds"
