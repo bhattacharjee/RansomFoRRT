@@ -322,6 +322,9 @@ def main() -> None:
         logger.opt(colors=True).info(
             "<green>*******************************************************</>"
         )
+        for i in range(3):
+            for j in range(3): 
+                gc.collect(i)
         if not retval:
             logger.error(
                 f"Error evaluating feature set '{fsname}', metrics = {metrics}"
