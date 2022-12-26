@@ -131,7 +131,7 @@ def annotate_df_with_additional_fields(
         dataframe["is_encrypted"] = 0
     dataframe["is_encrypted"] = dataframe["is_encrypted"].astype(np.bool8)
 
-    if "_v1" in name:
+    if "v1" in name:
         dataframe["an_v1_encrypted"] = 1
     else:
         dataframe["an_v1_encrypted"] = 0
@@ -139,7 +139,7 @@ def annotate_df_with_additional_fields(
         np.bool8
     )
 
-    if "_v2" in name:
+    if "v2" in name:
         dataframe["an_v2_encrypted"] = 1
     else:
         dataframe["an_v2_encrypted"] = 0
@@ -147,7 +147,7 @@ def annotate_df_with_additional_fields(
         np.bool8
     )
 
-    if "_v3" in name:
+    if "v3" in name:
         dataframe["an_v3_encrypted"] = 1
     else:
         dataframe["an_v3_encrypted"] = 0
@@ -155,14 +155,11 @@ def annotate_df_with_additional_fields(
         np.bool8
     )
 
-    def is_base32(filename: str) -> int:
-        return 1 if "base32" in filename else 0
-
     def is_webp(filename: str) -> int:
         return 1 if ".webp" in filename else 0
 
     dataframe["an_is_webp"] = (
-        dataframe["extended.base_filename"].map(is_base32).astype(np.bool8)
+        dataframe["extended.base_filename"].map(is_webp).astype(np.bool8)
     )
 
     return dataframe
@@ -346,49 +343,63 @@ def trim_dataset(
 ):
     df = df.copy()
     logger.debug(f"0 ===> {len(df)}")
+
     if exclude_plaintext_nonbase32:
         selector = ~df["is_encrypted"].astype(np.bool8) & ~df[
             "an_is_base32"
         ].astype(np.bool8)
         df = df[~selector]
     logger.debug(f"1 ===> {len(df)}")
+
     if exclude_plaintext_base32:
         selector = ~df["is_encrypted"].astype(np.bool8) & df[
             "an_is_base32"
         ].astype(np.bool8)
         df = df[~selector]
     logger.debug(f"2 ===> {len(df)}")
+
     if exclude_encrypted_v1:
         selector = df["an_v1_encrypted"].astype(np.bool8)
         df = df[~selector]
     logger.debug(f"3 ===> {len(df)}")
+
     if exclude_encrypted_v2:
         selector = df["an_v2_encrypted"].astype(np.bool8)
         df = df[~selector]
     logger.debug(f"4 ===> {len(df)}")
+
     if exclude_encrypted_base32:
         selector = df["is_encrypted"].astype(np.bool8) & df[
             "an_is_base32"
         ].astype(np.bool8)
         df = df[~selector]
     logger.debug(f"5 ===> {len(df)}")
+
     if exclude_encrypted_nonbase32:
         selector = df["is_encrypted"].astype(np.bool8) & ~df[
             "an_is_base32"
         ].astype(np.bool8)
         df = df[~selector]
     logger.debug(f"6 ===> {len(df)}")
+
     if exclude_webp:
         selector = df["an_is_webp"].astype(np.bool8)
         df = df[~selector]
     logger.debug(f"7 ===> {len(df)}")
+
     if exclude_nonwebp:
         selector = ~df["an_is_webp"].astype(np.bool8)
         df = df[~selector]
     logger.debug(f"8 ===> {len(df)}")
 
-    non_encrypted_count = (~df["is_encrypted"]).astype(np.int8).abs().sum()
-    encrypted_count = df["is_encrypted"].astype(np.int8).abs().sum()
+    try:
+        non_encrypted_count = (~df["is_encrypted"]).astype(np.int8).abs().sum()
+    except:
+        non_encrypted_count = 0
+    try:
+        encrypted_count = df["is_encrypted"].astype(np.int8).abs().sum()
+    except:
+        encrypted_count = 0
 
     logger.info(
         f"Encrypted: {encrypted_count} Non-Encrypted: {non_encrypted_count}"
@@ -399,10 +410,6 @@ def trim_dataset(
             gc.collect(i)
 
     if encrypted_count == 0 or non_encrypted_count == 0:
-        return None
-    if encrypted_count > 2 * non_encrypted_count:
-        return None
-    if non_encrypted_count > 2 * encrypted_count:
         return None
 
     return df
