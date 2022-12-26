@@ -11,6 +11,7 @@ import random
 import sys
 import time
 import uuid
+import warnings
 from typing import Callable, Dict, List, Tuple
 
 import numpy as np
@@ -41,6 +42,12 @@ def random_seed() -> None:
 
 def get_save_filename() -> str:
     return f"{str(uuid.uuid4())}.csv.gz"
+
+
+def gc_collect() -> None:
+    for i in range(3):
+        for j in range(3):
+            gc.collect(j)
 
 
 def get_columns_and_types(thisdf: pd.DataFrame) -> Dict[str, List[str]]:
@@ -136,25 +143,19 @@ def annotate_df_with_additional_fields(
         dataframe["an_v1_encrypted"] = 1
     else:
         dataframe["an_v1_encrypted"] = 0
-    dataframe["an_v1_encrypted"] = dataframe["an_v1_encrypted"].astype(
-        np.bool8
-    )
+    dataframe["an_v1_encrypted"] = dataframe["an_v1_encrypted"].astype(np.bool8)
 
     if "v2" in name:
         dataframe["an_v2_encrypted"] = 1
     else:
         dataframe["an_v2_encrypted"] = 0
-    dataframe["an_v2_encrypted"] = dataframe["an_v2_encrypted"].astype(
-        np.bool8
-    )
+    dataframe["an_v2_encrypted"] = dataframe["an_v2_encrypted"].astype(np.bool8)
 
     if "v3" in name:
         dataframe["an_v3_encrypted"] = 1
     else:
         dataframe["an_v3_encrypted"] = 0
-    dataframe["an_v3_encrypted"] = dataframe["an_v3_encrypted"].astype(
-        np.bool8
-    )
+    dataframe["an_v3_encrypted"] = dataframe["an_v3_encrypted"].astype(np.bool8)
 
     def is_webp(filename: str) -> int:
         return 1 if ".webp" in filename else 0
@@ -181,12 +182,11 @@ def load_data(input_directory: str) -> pd.DataFrame:
     dataframes = {
         # f: pd.read_csv(f, skiprows=lambda i: i > 0 and random.random() > p)
         f: pd.read_csv(f)
-        for f in glob.glob(f"{input_directory}/*.csv.gz")
+        for f in glob.glob(f"{input_directory}{os.path.sep}*.csv.gz")
     }
     logger.info("Annotating dataframes with additional fields")
     dataframes = {
-        f: annotate_df_with_additional_fields(f, df)
-        for f, df in dataframes.items()
+        f: annotate_df_with_additional_fields(f, df) for f, df in dataframes.items()
     }
 
     logger.info("Combining dataframes into a single dataframe")
@@ -196,7 +196,8 @@ def load_data(input_directory: str) -> pd.DataFrame:
         .reset_index(drop=True)
     )
 
-    _ = [gc.collect(i) for i in range(3) for j in range(3) for k in range(3)]
+    gc_collect()
+
     logger.info("done...")
     return df
 
@@ -262,9 +263,7 @@ def evaluate_features_folded(
             total=folds,
         )
     ):
-        logger.info(
-            f"---> Running iteration #{nid:02d} for {folds} fold verification."
-        )
+        logger.info(f"---> Running iteration #{nid:02d} for {folds} fold verification.")
         pline, y_pred_fn = get_pipeline(X, n_jobs=8)
         X_train, X_test = X[train_idx], X[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]
@@ -272,9 +271,7 @@ def evaluate_features_folded(
         y_pred = pline.predict(X_test)
         y_pred_final = y_pred_fn(y_pred)
         metrics.append(get_metrics(y_test, y_pred_final))
-        logger.opt(colors=True).info(
-            f"<magenta>another fold done. {metrics[-1]}</>"
-        )
+        logger.opt(colors=True).info(f"<magenta>another fold done. {metrics[-1]}</>")
 
         save_filename = output_directory + os.path.sep + get_save_filename()
         df2 = pd.DataFrame({"y_true": y_test, "y_pred": y_pred})
@@ -353,9 +350,9 @@ def trim_dataset(
     logger.debug(f"1 ===> {len(df)}")
 
     if exclude_plaintext_base32:
-        selector = ~(df["is_encrypted"].astype(np.bool8)) & df[
-            "an_is_base32"
-        ].astype(np.bool8)
+        selector = ~(df["is_encrypted"].astype(np.bool8)) & df["an_is_base32"].astype(
+            np.bool8
+        )
         df = df[~selector]
     logger.debug(f"2 ===> {len(df)}")
 
@@ -370,9 +367,9 @@ def trim_dataset(
     logger.debug(f"4 ===> {len(df)}")
 
     if exclude_encrypted_base32:
-        selector = df["is_encrypted"].astype(np.bool8) & df[
-            "an_is_base32"
-        ].astype(np.bool8)
+        selector = df["is_encrypted"].astype(np.bool8) & df["an_is_base32"].astype(
+            np.bool8
+        )
         df = df[~selector]
     logger.debug(f"5 ===> {len(df)}")
 
@@ -402,13 +399,9 @@ def trim_dataset(
     except:
         encrypted_count = 0
 
-    logger.info(
-        f"Encrypted: {encrypted_count} Non-Encrypted: {non_encrypted_count}"
-    )
+    logger.info(f"Encrypted: {encrypted_count} Non-Encrypted: {non_encrypted_count}")
 
-    for i in range(3):
-        for j in range(3):
-            gc.collect(i)
+    gc_collect()
 
     if encrypted_count == 0 or non_encrypted_count == 0:
         return None
@@ -490,9 +483,7 @@ def evaluate(
                 diagnose=True,
                 level="INFO",
             )
-            logger.info(
-                f"*** Processing Combination {n:02d} combination = {message}"
-            )
+            logger.info(f"*** Processing Combination {n:02d} combination = {message}")
             comb_json_str = json.dumps(
                 {e1: e2 for e1, e2 in zip(list_of_combinations, combination)}
             )
@@ -530,6 +521,7 @@ def evaluate(
 
 def main() -> None:
     # dotenv.load_dotenv()
+    warnings.filterwarnings("ignore")
     parser = argparse.ArgumentParser("Run experiments")
     parser.add_argument(
         "-i",
@@ -562,16 +554,14 @@ def main() -> None:
     ):
         os.mkdir(args.output_directory)
 
-    log_file = f"{args.output_directory}/log.log"
+    log_file = f"{args.output_directory}{os.path.sep}log.log"
     if os.path.exists(log_file):
         os.unlink(log_file)
     if os.path.exists(f"{log_file}.debug.log"):
         os.unlink(f"{log_file}.debug.log")
     logger.remove()
     logger.add(log_file, backtrace=True, diagnose=True, level="INFO")
-    logger.add(
-        f"{log_file}.debug.log", backtrace=True, diagnose=True, level="DEBUG"
-    )
+    logger.add(f"{log_file}.debug.log", backtrace=True, diagnose=True, level="DEBUG")
     logger.add(sys.stderr, backtrace=True, diagnose=True, level="ERROR")
     logger.opt(colors=True).info(f"<blue>Running with {args}</>")
 
@@ -588,10 +578,8 @@ def main() -> None:
             colour="blue",
         )
     ):
-        temp_output_dir = f"{args.output_directory}/{fsname}"
-        print_text = (
-            f"******** Processing {fsname} and writing into {temp_output_dir}"
-        )
+        temp_output_dir = f"{args.output_directory}" + os.path.sep + f"{fsname}"
+        print_text = f"******** Processing {fsname} and writing into {temp_output_dir}"
         logger.opt(colors=True).info(f"<green>{print_text}</>")
         logger.opt(colors=True).info(f"<green>{'-' * len(print_text)}</>")
 
@@ -623,17 +611,15 @@ def main() -> None:
         logger.remove(logid)
 
         t2 = time.perf_counter()
-        logger.info(
-            f"{n:02d}. Completed running feature {fsname} in {t2 - t1} seconds"
-        )
+        logger.info(f"{n:02d}. Completed running feature {fsname} in {t2 - t1} seconds")
         logger.opt(colors=True).info(f"<magenta>{fsname=} {metrics=}</>")
+        print("*" * 80)
         print(f"{fsname=} {metrics=}")
+        print()
         logger.opt(colors=True).info(
             "<green>*******************************************************</>"
         )
-        for i in range(3):
-            for j in range(3):
-                gc.collect(i)
+        gc_collect()
         if not retval:
             logger.error(
                 f"Error evaluating feature set '{fsname}', metrics = {metrics}"
