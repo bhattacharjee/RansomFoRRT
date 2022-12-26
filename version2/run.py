@@ -480,9 +480,6 @@ def evaluate(
         logger.opt(colors=True).info(f">> Combination {n:02d}: {message}")
         temp_data = trim_dataset(data, *combination)
         if temp_data is not None:
-            logger.info(
-                f"*** Processing Combination {n:02d} combination = {message}"
-            )
             temp_dir = output_directory + os.path.sep + f"run-{n}"
             if not os.path.exists(temp_dir):
                 os.mkdir(temp_dir)
@@ -492,6 +489,13 @@ def evaluate(
                 diagnose=True,
                 level="INFO",
             )
+            logger.info(
+                f"*** Processing Combination {n:02d} combination = {message}"
+            )
+            comb_json_str = json.dumps(
+                {e1: e2 in zip(list_of_combinations, combination)}
+            )
+            logger.info(f"*** combination_json = {comb_json_str}")
             success, metric = evaluate_features(
                 name=name,
                 data=temp_data,
