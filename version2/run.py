@@ -406,7 +406,6 @@ def combine_metrics(list_of_lists: List[List[float]]) -> List[float]:
     outlist = [0.0] * len(list_of_lists[0])
     count = 0
     for thelist in list_of_lists:
-        logger.info(f"{thelist=} {outlist=}")
         count += 1
         for i in range(len(thelist)):
             outlist[i] += thelist[i]
