@@ -619,9 +619,6 @@ def main() -> None:
             )
             break
         logger.opt(colors=True).info(f"<magenta>{fsname} : {metrics}</>")
-    if len(all_metrics) > 0:
-        overall_metrics = combine_metrics(all_metrics)
-        logger.opt(colors=True).info(f"<pink>{overall_metrics=}</>")
     print("Finished... OK")
     logger.opt(colors=True).info(f"<green>Finished... OK</>")
 
