@@ -131,37 +131,43 @@ def annotate_df_with_additional_fields(
         dataframe["an_is_base32"] = 1
     else:
         dataframe["an_is_base32"] = 0
-    dataframe["an_is_base32"] = dataframe["an_is_base32"].astype(np.bool8)
+    dataframe["an_is_base32"] = dataframe["an_is_base32"].astype(np.bool_)
 
     if "encrypt" in name:
         dataframe["is_encrypted"] = 1
     else:
         dataframe["is_encrypted"] = 0
-    dataframe["is_encrypted"] = dataframe["is_encrypted"].astype(np.bool8)
+    dataframe["is_encrypted"] = dataframe["is_encrypted"].astype(np.bool_)
 
     if "v1" in name:
         dataframe["an_v1_encrypted"] = 1
     else:
         dataframe["an_v1_encrypted"] = 0
-    dataframe["an_v1_encrypted"] = dataframe["an_v1_encrypted"].astype(np.bool8)
+    dataframe["an_v1_encrypted"] = dataframe["an_v1_encrypted"].astype(
+        np.bool_
+    )
 
     if "v2" in name:
         dataframe["an_v2_encrypted"] = 1
     else:
         dataframe["an_v2_encrypted"] = 0
-    dataframe["an_v2_encrypted"] = dataframe["an_v2_encrypted"].astype(np.bool8)
+    dataframe["an_v2_encrypted"] = dataframe["an_v2_encrypted"].astype(
+        np.bool_
+    )
 
     if "v3" in name:
         dataframe["an_v3_encrypted"] = 1
     else:
         dataframe["an_v3_encrypted"] = 0
-    dataframe["an_v3_encrypted"] = dataframe["an_v3_encrypted"].astype(np.bool8)
+    dataframe["an_v3_encrypted"] = dataframe["an_v3_encrypted"].astype(
+        np.bool_
+    )
 
     def is_webp(filename: str) -> int:
         return 1 if ".webp" in filename else 0
 
     dataframe["an_is_webp"] = (
-        dataframe["extended.base_filename"].map(is_webp).astype(np.bool8)
+        dataframe["extended.base_filename"].map(is_webp).astype(np.bool_)
     )
 
     return dataframe
@@ -186,7 +192,8 @@ def load_data(input_directory: str) -> pd.DataFrame:
     }
     logger.info("Annotating dataframes with additional fields")
     dataframes = {
-        f: annotate_df_with_additional_fields(f, df) for f, df in dataframes.items()
+        f: annotate_df_with_additional_fields(f, df)
+        for f, df in dataframes.items()
     }
 
     logger.info("Combining dataframes into a single dataframe")
@@ -263,18 +270,30 @@ def evaluate_features_folded(
             total=folds,
         )
     ):
-        logger.info(f"---> Running iteration #{nid:02d} for {folds} fold verification.")
+        logger.info(
+            f"---> Running iteration #{nid:02d} for {folds} fold verification."
+        )
         pline, y_pred_fn = get_pipeline(X, n_jobs=8)
         X_train, X_test = X[train_idx], X[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]
         pline.fit(X_train, y_train)
         y_pred = pline.predict(X_test)
         y_pred_final = y_pred_fn(y_pred)
+        y_predict_proba = pline.predict_proba(X_test)
         metrics.append(get_metrics(y_test, y_pred_final))
-        logger.opt(colors=True).info(f"<magenta>another fold done. {metrics[-1]}</>")
+        logger.opt(colors=True).info(
+            f"<magenta>another fold done. {metrics[-1]}</>"
+        )
 
         save_filename = output_directory + os.path.sep + get_save_filename()
-        df2 = pd.DataFrame({"y_true": y_test, "y_pred": y_pred})
+        df2 = pd.DataFrame(
+            {
+                "y_true": y_test,
+                "y_pred": y_pred,
+                "y_pred_proba_0": y_predict_proba[:, 0],
+                "y_predict_proba_1": y_predict_proba[:, 1],
+            }
+        )
         df2.to_csv(save_filename)
         logger.info(f"Saved result to {save_filename}.")
 
@@ -343,50 +362,50 @@ def trim_dataset(
     logger.debug(f"0 ===> {len(df)}")
 
     if exclude_plaintext_nonbase32:
-        selector = ~(df["is_encrypted"].astype(np.bool8)) & ~(
-            df["an_is_base32"].astype(np.bool8)
+        selector = ~(df["is_encrypted"].astype(np.bool_)) & ~(
+            df["an_is_base32"].astype(np.bool_)
         )
         df = df[~selector]
     logger.debug(f"1 ===> {len(df)}")
 
     if exclude_plaintext_base32:
-        selector = ~(df["is_encrypted"].astype(np.bool8)) & df["an_is_base32"].astype(
-            np.bool8
-        )
+        selector = ~(df["is_encrypted"].astype(np.bool_)) & df[
+            "an_is_base32"
+        ].astype(np.bool_)
         df = df[~selector]
     logger.debug(f"2 ===> {len(df)}")
 
     if exclude_encrypted_v1:
-        selector = df["an_v1_encrypted"].astype(np.bool8)
+        selector = df["an_v1_encrypted"].astype(np.bool_)
         df = df[~selector]
     logger.debug(f"3 ===> {len(df)}")
 
     if exclude_encrypted_v2:
-        selector = df["an_v2_encrypted"].astype(np.bool8)
+        selector = df["an_v2_encrypted"].astype(np.bool_)
         df = df[~selector]
     logger.debug(f"4 ===> {len(df)}")
 
     if exclude_encrypted_base32:
-        selector = df["is_encrypted"].astype(np.bool8) & df["an_is_base32"].astype(
-            np.bool8
-        )
+        selector = df["is_encrypted"].astype(np.bool_) & df[
+            "an_is_base32"
+        ].astype(np.bool_)
         df = df[~selector]
     logger.debug(f"5 ===> {len(df)}")
 
     if exclude_encrypted_nonbase32:
-        selector = df["is_encrypted"].astype(np.bool8) & ~(
-            df["an_is_base32"].astype(np.bool8)
+        selector = df["is_encrypted"].astype(np.bool_) & ~(
+            df["an_is_base32"].astype(np.bool_)
         )
         df = df[~selector]
     logger.debug(f"6 ===> {len(df)}")
 
     if exclude_webp:
-        selector = df["an_is_webp"].astype(np.bool8)
+        selector = df["an_is_webp"].astype(np.bool_)
         df = df[~selector]
     logger.debug(f"7 ===> {len(df)}")
 
     if exclude_nonwebp:
-        selector = ~(df["an_is_webp"].astype(np.bool8))
+        selector = ~(df["an_is_webp"].astype(np.bool_))
         df = df[~selector]
     logger.debug(f"8 ===> {len(df)}")
 
@@ -399,7 +418,9 @@ def trim_dataset(
     except:
         encrypted_count = 0
 
-    logger.info(f"Encrypted: {encrypted_count} Non-Encrypted: {non_encrypted_count}")
+    logger.info(
+        f"Encrypted: {encrypted_count} Non-Encrypted: {non_encrypted_count}"
+    )
 
     gc_collect()
 
@@ -483,7 +504,9 @@ def evaluate(
                 diagnose=True,
                 level="INFO",
             )
-            logger.info(f"*** Processing Combination {n:02d} combination = {message}")
+            logger.info(
+                f"*** Processing Combination {n:02d} combination = {message}"
+            )
             comb_json_str = json.dumps(
                 {e1: e2 for e1, e2 in zip(list_of_combinations, combination)}
             )
@@ -561,7 +584,9 @@ def main() -> None:
         os.unlink(f"{log_file}.debug.log")
     logger.remove()
     logger.add(log_file, backtrace=True, diagnose=True, level="INFO")
-    logger.add(f"{log_file}.debug.log", backtrace=True, diagnose=True, level="DEBUG")
+    logger.add(
+        f"{log_file}.debug.log", backtrace=True, diagnose=True, level="DEBUG"
+    )
     logger.add(sys.stderr, backtrace=True, diagnose=True, level="ERROR")
     logger.opt(colors=True).info(f"<blue>Running with {args}</>")
 
@@ -578,8 +603,12 @@ def main() -> None:
             colour="blue",
         )
     ):
-        temp_output_dir = f"{args.output_directory}" + os.path.sep + f"{fsname}"
-        print_text = f"******** Processing {fsname} and writing into {temp_output_dir}"
+        temp_output_dir = (
+            f"{args.output_directory}" + os.path.sep + f"{fsname}"
+        )
+        print_text = (
+            f"******** Processing {fsname} and writing into {temp_output_dir}"
+        )
         logger.opt(colors=True).info(f"<green>{print_text}</>")
         logger.opt(colors=True).info(f"<green>{'-' * len(print_text)}</>")
 
@@ -611,7 +640,9 @@ def main() -> None:
         logger.remove(logid)
 
         t2 = time.perf_counter()
-        logger.info(f"{n:02d}. Completed running feature {fsname} in {t2 - t1} seconds")
+        logger.info(
+            f"{n:02d}. Completed running feature {fsname} in {t2 - t1} seconds"
+        )
         logger.opt(colors=True).info(f"<magenta>{fsname=} {metrics=}</>")
         print("*" * 80)
         print(f"{fsname=} {metrics=}")
