@@ -299,8 +299,7 @@ def evaluate_features_folded(
             {
                 "y_true": y_test,
                 "y_pred": y_pred,
-                "y_pred_proba_0": y_predict_proba[:, 0],
-                "y_predict_proba_1": y_predict_proba[:, 1],
+                "y_pred_proba": y_predict_proba[:, 1],
             }
         )
         df2.to_csv(save_filename)
