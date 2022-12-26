@@ -123,31 +123,37 @@ def annotate_df_with_additional_fields(
         dataframe["an_is_base32"] = 1
     else:
         dataframe["an_is_base32"] = 0
-    dataframe["an_is_base32"] = dataframe["an_is_base32"].astype(np.int8)
+    dataframe["an_is_base32"] = dataframe["an_is_base32"].astype(np.bool8)
 
-    if "encrypted" in name:
+    if "encrypt" in name:
         dataframe["is_encrypted"] = 1
     else:
         dataframe["is_encrypted"] = 0
-    dataframe["is_encrypted"] = dataframe["is_encrypted"].astype(np.int8)
+    dataframe["is_encrypted"] = dataframe["is_encrypted"].astype(np.bool8)
 
     if "_v1" in name:
         dataframe["an_v1_encrypted"] = 1
     else:
         dataframe["an_v1_encrypted"] = 0
-    dataframe["an_v1_encrypted"] = dataframe["an_v1_encrypted"].astype(np.int8)
+    dataframe["an_v1_encrypted"] = dataframe["an_v1_encrypted"].astype(
+        np.bool8
+    )
 
     if "_v2" in name:
         dataframe["an_v2_encrypted"] = 1
     else:
         dataframe["an_v2_encrypted"] = 0
-    dataframe["an_v2_encrypted"] = dataframe["an_v2_encrypted"].astype(np.int8)
+    dataframe["an_v2_encrypted"] = dataframe["an_v2_encrypted"].astype(
+        np.bool8
+    )
 
     if "_v3" in name:
         dataframe["an_v3_encrypted"] = 1
     else:
         dataframe["an_v3_encrypted"] = 0
-    dataframe["an_v3_encrypted"] = dataframe["an_v3_encrypted"].astype(np.int8)
+    dataframe["an_v3_encrypted"] = dataframe["an_v3_encrypted"].astype(
+        np.bool8
+    )
 
     def is_base32(filename: str) -> int:
         return 1 if "base32" in filename else 0
@@ -156,7 +162,7 @@ def annotate_df_with_additional_fields(
         return 1 if ".webp" in filename else 0
 
     dataframe["an_is_webp"] = (
-        dataframe["extended.base_filename"].map(is_base32).astype(np.int8)
+        dataframe["extended.base_filename"].map(is_base32).astype(np.bool8)
     )
 
     return dataframe
@@ -172,7 +178,7 @@ def load_data(input_directory: str) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A combined dataframe of all files
     """
-    p = 0.01
+    p = 0.1
     logger.info("Loading dataframes")
     dataframes = {
         f: pd.read_csv(f, skiprows=lambda i: i > 0 and random.random() > p)
@@ -185,7 +191,11 @@ def load_data(input_directory: str) -> pd.DataFrame:
     }
 
     logger.info("Combining dataframes into a single dataframe")
-    df = pd.concat([df for _, df in dataframes.items()])
+    df = (
+        pd.concat([df for _, df in dataframes.items()])
+        .sample(frac=1)
+        .reset_index(drop=True)
+    )
 
     _ = [gc.collect(i) for i in range(3) for j in range(3) for k in range(3)]
     logger.info("done...")
@@ -393,10 +403,10 @@ def trim_dataset(
 def combine_metrics(list_of_lists: List[List[float]]) -> List[float]:
     if len(list_of_lists) == 0:
         return []
-    logger.info(list_of_lists)
-    outlist = [0.0 * len(list_of_lists[0])]
+    outlist = [0.0] * len(list_of_lists[0])
     count = 0
     for thelist in list_of_lists:
+        logger.info(f"{thelist=} {outlist=}")
         count += 1
         for i in range(len(thelist)):
             outlist[i] += thelist[i]
@@ -544,6 +554,7 @@ def main() -> None:
 
     annot_columns = get_annotation_columns(data)
 
+    all_metrics = []
     for n, (fsname, fscolumns) in tqdm.tqdm(
         enumerate(get_columns_and_types(data).items()),
         desc="Iterating through feature sets",
@@ -579,6 +590,7 @@ def main() -> None:
             n_jobs=args.n_jobs,
             folds=args.n_folds,
         )
+        all_metrics.append(all_metrics)
         logger.remove(logid)
 
         t2 = time.perf_counter()
@@ -597,6 +609,9 @@ def main() -> None:
             )
             break
         logger.opt(colors=True).info(f"<magenta>{fsname} : {metrics}</>")
+    if len(all_metrics) > 0:
+        overall_metrics = combine_metrics(all_metrics)
+        logger.opt(colors=True).info(f"<pink>{overall_metrics=}</>")
 
 
 if "__main__" == __name__:
