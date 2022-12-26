@@ -345,12 +345,16 @@ def trim_dataset(
     logger.debug(f"0 ===> {len(df)}")
 
     if exclude_plaintext_nonbase32:
-        selector = ~(df["is_encrypted"].astype(np.bool8)) & ~( df["an_is_base32"].astype(np.bool8))
+        selector = ~(df["is_encrypted"].astype(np.bool8)) & ~(
+            df["an_is_base32"].astype(np.bool8)
+        )
         df = df[~selector]
     logger.debug(f"1 ===> {len(df)}")
 
     if exclude_plaintext_base32:
-        selector = (~(df["is_encrypted"].astype(np.bool8)) & df[ "an_is_base32" ].astype(np.bool8))
+        selector = ~(df["is_encrypted"].astype(np.bool8)) & df[
+            "an_is_base32"
+        ].astype(np.bool8)
         df = df[~selector]
     logger.debug(f"2 ===> {len(df)}")
 
@@ -365,12 +369,16 @@ def trim_dataset(
     logger.debug(f"4 ===> {len(df)}")
 
     if exclude_encrypted_base32:
-        selector = (df["is_encrypted"].astype(np.bool8) & df[ "an_is_base32" ].astype(np.bool8))
+        selector = df["is_encrypted"].astype(np.bool8) & df[
+            "an_is_base32"
+        ].astype(np.bool8)
         df = df[~selector]
     logger.debug(f"5 ===> {len(df)}")
 
     if exclude_encrypted_nonbase32:
-        selector = (df["is_encrypted"].astype(np.bool8) & ~( df["an_is_base32"].astype(np.bool8)))
+        selector = df["is_encrypted"].astype(np.bool8) & ~(
+            df["an_is_base32"].astype(np.bool8)
+        )
         df = df[~selector]
     logger.debug(f"6 ===> {len(df)}")
 
