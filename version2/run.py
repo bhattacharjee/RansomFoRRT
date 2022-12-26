@@ -258,6 +258,7 @@ def evaluate_features_folded(
         tqdm.tqdm(
             skf.split(X, y),
             desc=f"Running {folds} folds verification: ",
+            color="red",
         )
     ):
         logger.info(
@@ -451,7 +452,11 @@ def evaluate(
 
     all_metrics = []
     for n, combination in enumerate(
-        tqdm.tqdm(combinations, desc=f"{name}: Combinations of file types:")
+        tqdm.tqdm(
+            combinations,
+            desc=f"{name}: Combinations of file types:",
+            color="green",
+        )
     ):
         random_seed()
         message = " ".join(
@@ -560,6 +565,7 @@ def main() -> None:
         tqdm.tqdm(
             get_columns_and_types(data).items(),
             desc="Iterating through feature sets",
+            color="blue",
         )
     ):
         temp_output_dir = f"{args.output_directory}/{fsname}"
