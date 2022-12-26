@@ -485,6 +485,7 @@ def evaluate(
                 folds=folds,
             )
             logger.remove(logid2)
+            all_metrics.append(metric)
             if not success:
                 logger.error(
                     f"Fatal: Failed to process iteration {n} ... "
