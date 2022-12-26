@@ -494,7 +494,7 @@ def evaluate(
                 f"*** Processing Combination {n:02d} combination = {message}"
             )
             comb_json_str = json.dumps(
-                {e1: e2 in zip(list_of_combinations, combination)}
+                {e1: e2 for e1, e2 in zip(list_of_combinations, combination)}
             )
             logger.info(f"*** combination_json = {comb_json_str}")
             success, metric = evaluate_features(
