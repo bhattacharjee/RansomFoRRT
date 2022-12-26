@@ -554,7 +554,6 @@ def main() -> None:
 
     annot_columns = get_annotation_columns(data)
 
-    all_metrics = []
     for n, (fsname, fscolumns) in tqdm.tqdm(
         enumerate(get_columns_and_types(data).items()),
         desc="Iterating through feature sets",
@@ -590,13 +589,14 @@ def main() -> None:
             n_jobs=args.n_jobs,
             folds=args.n_folds,
         )
-        all_metrics.append(all_metrics)
         logger.remove(logid)
 
         t2 = time.perf_counter()
         logger.info(
             f"{n:02d}. Completed running feature {fsname} in {t2 - t1} seconds"
         )
+        logger.opt(colors=True).info(f"{fsname=} {metrics=}")
+        print(f"{fsname=} {metrics=}")
         logger.opt(colors=True).info(
             "<green>*******************************************************</>"
         )
