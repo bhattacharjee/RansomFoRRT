@@ -605,7 +605,7 @@ def main() -> None:
         logger.info(
             f"{n:02d}. Completed running feature {fsname} in {t2 - t1} seconds"
         )
-        logger.opt(colors=True).info(f"{fsname=} {metrics=}")
+        logger.opt(colors=True).info(f"<pink>{fsname=} {metrics=}</>")
         print(f"{fsname=} {metrics=}")
         logger.opt(colors=True).info(
             "<green>*******************************************************</>"
