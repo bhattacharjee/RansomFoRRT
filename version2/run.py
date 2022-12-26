@@ -9,22 +9,38 @@ import os
 import random
 import sys
 import time
-from typing import Dict, List, Tuple
+import uuid
+from typing import Callable, Dict, List, Tuple
 
 import numpy as np
-import random
 import pandas as pd
 import tqdm
 from loguru import logger
 from sklearn import pipeline
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import (
+    accuracy_score,
+    balanced_accuracy_score,
+    f1_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+)
+from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.preprocessing import MinMaxScaler
 
 # import dotenv
+
 
 def random_seed() -> None:
     np.random.seed(0)
     random.seed(0)
+
+
+def get_save_filename() -> str:
+    return f"{str(uuid.uuid4())}.csv.gz"
+
 
 def get_columns_and_types(thisdf: pd.DataFrame) -> Dict[str, List[str]]:
     """For each feature set type, get the relevant columns.
@@ -176,11 +192,39 @@ def load_data(input_directory: str) -> pd.DataFrame:
     return df
 
 
-def get_pipeline(X: pd.DataFrame, n_jobs: int = 4) -> pipeline.Pipeline:
+def get_pipeline(
+    X: pd.DataFrame, n_jobs: int = 4
+) -> Tuple[pipeline.Pipeline, Callable[[np.array], np.array]]:
+    random_seed()
     pipe = pipeline.Pipeline(
-        [("classif", RandomForestClassifier(n_jobs=n_jobs))]
+        [
+            ("std", MinMaxScaler()),
+            ("classif", RandomForestClassifier(n_jobs=n_jobs)),
+        ]
     )
-    return pipe
+    # In case the predicted value needs to be converted to an integer
+    # this lambda will do the work
+    return pipe, lambda x: x
+
+
+def get_metrics(y_true: np.array, y_pred: np.array) -> List[float]:
+    def error_checked_metric(fn, y_true, y_pred):
+        try:
+            return fn(y_true, y_pred)
+        except Exception as e:
+            return -1.0
+
+    return [
+        error_checked_metric(fn, y_true, y_pred)
+        for fn in [
+            accuracy_score,
+            balanced_accuracy_score,
+            f1_score,
+            precision_score,
+            recall_score,
+            roc_auc_score,
+        ]
+    ]
 
 
 def evaluate_features_folded(
@@ -192,7 +236,36 @@ def evaluate_features_folded(
     n_jobs: int,
     folds: int = -1,
 ) -> Tuple[bool, List[float]]:
-    return True, []
+    metrics = []
+    random_seed()
+    colnames = [c for c in feature_column_names if "is_encrypted" not in c]
+    colnames = [c for c in colnames if c not in annotation_columns]
+    colnames = [c for c in colnames if not c.startswith("an_")]
+    X = data[colnames].to_numpy()
+    y = data["is_encrypted"].to_numpy().flatten()
+    skf = StratifiedKFold(n_splits=folds, shuffle=True, random_state=0)
+    for nid, (train_idx, test_idx) in tqdm.tqdm(
+        enumerate(skf.split(X, y)),
+        desc=f"Running {folds} folds verification: ",
+    ):
+        logger.info(
+            f"---> Running iteration #{nid:02d} for {folds} fold verification."
+        )
+        pline, y_pred_fn = get_pipeline(X, n_jobs=8)
+        X_train, X_test = X[train_idx], X[test_idx]
+        y_train, y_test = y[train_idx], y[test_idx]
+        pline.fit(X_train, y_train)
+        y_pred = pline.predict(X_test)
+        y_pred_final = y_pred_fn(y_pred)
+        metrics.append(get_metrics(y_test, y_pred_final))
+        logger.info(f"done. {metrics=}")
+
+        save_filename = output_directory + os.path.sep + get_save_filename()
+        df2 = pd.DataFrame({"y_true": y_test, "y_pred": y_pred})
+        df2.to_csv(save_filename)
+        logger.info(f"Saved result to {save_filename}.")
+
+    return True, combine_metrics(metrics)
 
 
 def evaluate_features_regular(
@@ -203,8 +276,10 @@ def evaluate_features_regular(
     annotation_columns: List[str],
     n_jobs: int,
 ) -> Tuple[bool, List[float]]:
-    X = data[feature_column_names]
-    y = data["is_encrypted"]
+    colnames = [c for c in feature_column_names if "is_encrypted" not in c]
+    colnames = [c for c in colnames if not c.startswith("an_")]
+    X = data[colnames].to_numpy()
+    y = data["is_encrypted"].to_numpy().flatten()
     pline = get_pipeline(X, n_jobs=n_jobs)
     return True, []
 
@@ -374,15 +449,21 @@ def evaluate(
         logger.opt(colors=True).info(
             "<yellow>- - - - - - - - - - - - - - - - - - - - - </>"
         )
-        logger.opt(colors=True).info(f"Combination {n:02d}: {message}")
+        logger.opt(colors=True).info(f">> Combination {n:02d}: {message}")
         temp_data = trim_dataset(data, *combination)
         if temp_data is not None:
             logger.info(
-                f"Processing Combination {n:02d} combination = {message}"
+                f"*** Processing Combination {n:02d} combination = {message}"
             )
             temp_dir = output_directory + os.path.sep + f"run-{n}"
             if not os.path.exists(temp_dir):
                 os.mkdir(temp_dir)
+            logid2 = logger.add(
+                temp_dir + os.path.sep + "log.log",
+                backtrace=True,
+                diagnose=True,
+                level="INFO",
+            )
             success, metric = evaluate_features(
                 name=name,
                 data=temp_data,
@@ -392,6 +473,7 @@ def evaluate(
                 n_jobs=n_jobs,
                 folds=folds,
             )
+            logger.remove(logid2)
             if not success:
                 logger.error(
                     f"Fatal: Failed to process iteration {n} ... "
@@ -426,7 +508,7 @@ def main() -> None:
         help="Output directory.",
     )
     parser.add_argument(
-        "-n", "--n-jobs", type=int, default=4, help="Number of jobs to run."
+        "-nj", "--n-jobs", type=int, default=4, help="Number of jobs to run."
     )
     parser.add_argument(
         "-nf", "--n-folds", type=int, default=-1, help="Folds to run for"
@@ -467,7 +549,9 @@ def main() -> None:
         desc="Iterating through feature sets",
     ):
         temp_output_dir = f"{args.output_directory}/{fsname}"
-        print_text = f"Processing {fsname} and writing into {temp_output_dir}"
+        print_text = (
+            f"******** Processing {fsname} and writing into {temp_output_dir}"
+        )
         logger.opt(colors=True).info(f"<green>{print_text}</>")
         logger.opt(colors=True).info(f"<green>{'-' * len(print_text)}</>")
 
@@ -479,7 +563,7 @@ def main() -> None:
             os.mkdir(temp_output_dir)
         t1 = time.perf_counter()
 
-        logger.info(f"{n:02d}. Started evaluating feature set: {fsname}")
+        logger.info(f"**** {n:02d}. Started evaluating feature set: {fsname}")
         logid = logger.add(
             temp_output_dir + os.path.sep + "log.log",
             backtrace=True,
