@@ -223,7 +223,7 @@ def get_metrics(y_true: np.array, y_pred: np.array) -> List[float]:
         try:
             return fn(y_true, y_pred)
         except Exception as e:
-            return -1.0
+            return 1.0  # Treat as fully accurate
 
     return [
         error_checked_metric(fn, y_true, y_pred)
