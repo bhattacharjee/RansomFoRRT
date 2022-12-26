@@ -186,8 +186,8 @@ def load_data(input_directory: str) -> pd.DataFrame:
     p = 0.02
     logger.info("Loading dataframes")
     dataframes = {
-        f: pd.read_csv(f, skiprows=lambda i: i > 0 and random.random() > p)
-        # f: pd.read_csv(f)
+        # f: pd.read_csv(f, skiprows=lambda i: i > 0 and random.random() > p)
+        f: pd.read_csv(f)
         for f in glob.glob(f"{input_directory}{os.path.sep}*.csv.gz")
     }
     logger.info("Annotating dataframes with additional fields")
