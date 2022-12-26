@@ -9,7 +9,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args": ["-i", "${workspaceFolder}", "-o", "${workspaceFolder}"]
+            "args": ["-i", "${workspaceFolder}/datadir", "-o", "${workspaceFolder}/output", "-nf", "4", "-nj", "10"]
         }
     ]
 }
