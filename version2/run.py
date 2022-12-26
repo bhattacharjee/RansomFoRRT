@@ -181,7 +181,8 @@ def load_data(input_directory: str) -> pd.DataFrame:
     p = 0.1
     logger.info("Loading dataframes")
     dataframes = {
-        f: pd.read_csv(f, skiprows=lambda i: i > 0 and random.random() > p)
+        #f: pd.read_csv(f, skiprows=lambda i: i > 0 and random.random() > p)
+        f: pd.read_csv(f)
         for f in glob.glob(f"{input_directory}/*.csv.gz")
     }
     logger.info("Annotating dataframes with additional fields")
@@ -605,7 +606,7 @@ def main() -> None:
         logger.info(
             f"{n:02d}. Completed running feature {fsname} in {t2 - t1} seconds"
         )
-        logger.opt(colors=True).info(f"<pink>{fsname=} {metrics=}</>")
+        logger.opt(colors=True).info(f"<magenta>{fsname=} {metrics=}</>")
         print(f"{fsname=} {metrics=}")
         logger.opt(colors=True).info(
             "<green>*******************************************************</>"
