@@ -261,6 +261,7 @@ def evaluate_features_folded(
             skf.split(X, y),
             desc=f"Running {folds} folds verification: ",
             colour="red",
+            total=folds,
         )
     ):
         logger.info(
