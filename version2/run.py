@@ -181,7 +181,7 @@ def load_data(input_directory: str) -> pd.DataFrame:
     p = 0.1
     logger.info("Loading dataframes")
     dataframes = {
-        #f: pd.read_csv(f, skiprows=lambda i: i > 0 and random.random() > p)
+        # f: pd.read_csv(f, skiprows=lambda i: i > 0 and random.random() > p)
         f: pd.read_csv(f)
         for f in glob.glob(f"{input_directory}/*.csv.gz")
     }
@@ -253,6 +253,7 @@ def evaluate_features_folded(
     colnames = [c for c in colnames if c not in annotation_columns]
     colnames = [c for c in colnames if not c.startswith("an_")]
     X = data[colnames].to_numpy()
+    # print("COLUMNS: ", data[colnames].columns)
     y = data["is_encrypted"].to_numpy().flatten()
     skf = StratifiedKFold(n_splits=folds, shuffle=True, random_state=0)
     for nid, (train_idx, test_idx) in enumerate(
@@ -272,7 +273,9 @@ def evaluate_features_folded(
         y_pred = pline.predict(X_test)
         y_pred_final = y_pred_fn(y_pred)
         metrics.append(get_metrics(y_test, y_pred_final))
-        logger.info(f"done. {metrics=}")
+        logger.opt(colors=True).info(
+            f"<magenta>another fold done. {metrics[-1]}</>"
+        )
 
         save_filename = output_directory + os.path.sep + get_save_filename()
         df2 = pd.DataFrame({"y_true": y_test, "y_pred": y_pred})
@@ -502,6 +505,10 @@ def evaluate(
                     f"combination = {message}"
                 )
                 return False, []
+            else:
+                logger.opt(colors=True).info(
+                    f"<magenta>Combination {n:02d} done {metric=}</>"
+                )
         else:
             logger.info(f"Combination {n:02d} had no elements")
 
@@ -558,7 +565,6 @@ def main() -> None:
     random_seed()
 
     data = load_data(args.input_directory)
-    print(data[[c for c in data.columns if c.startswith("an")]].head())
 
     annot_columns = get_annotation_columns(data)
 
@@ -591,6 +597,7 @@ def main() -> None:
             diagnose=True,
             level="INFO",
         )
+        # print(fscolumns)
         retval, metrics = evaluate(
             name=fsname,
             data=data[columns].copy(),
