@@ -254,9 +254,11 @@ def evaluate_features_folded(
     X = data[colnames].to_numpy()
     y = data["is_encrypted"].to_numpy().flatten()
     skf = StratifiedKFold(n_splits=folds, shuffle=True, random_state=0)
-    for nid, (train_idx, test_idx) in tqdm.tqdm(
-        enumerate(skf.split(X, y)),
-        desc=f"Running {folds} folds verification: ",
+    for nid, (train_idx, test_idx) in enumerate(
+        tqdm.tqdm(
+            skf.split(X, y),
+            desc=f"Running {folds} folds verification: ",
+        )
     ):
         logger.info(
             f"---> Running iteration #{nid:02d} for {folds} fold verification."
@@ -448,8 +450,8 @@ def evaluate(
         combinations = temp
 
     all_metrics = []
-    for n, combination in tqdm.tqdm(
-        enumerate(combinations), desc=f"{name}: Combinations of file types:"
+    for n, combination in enumerate(
+        tqdm.tqdm(combinations, desc=f"{name}: Combinations of file types:")
     ):
         random_seed()
         message = " ".join(
@@ -553,9 +555,11 @@ def main() -> None:
 
     annot_columns = get_annotation_columns(data)
 
-    for n, (fsname, fscolumns) in tqdm.tqdm(
-        enumerate(get_columns_and_types(data).items()),
-        desc="Iterating through feature sets",
+    for n, (fsname, fscolumns) in enumerate(
+        tqdm.tqdm(
+            get_columns_and_types(data).items(),
+            desc="Iterating through feature sets",
+        )
     ):
         temp_output_dir = f"{args.output_directory}/{fsname}"
         print_text = (
@@ -611,6 +615,8 @@ def main() -> None:
     if len(all_metrics) > 0:
         overall_metrics = combine_metrics(all_metrics)
         logger.opt(colors=True).info(f"<pink>{overall_metrics=}</>")
+    print("Finished... OK")
+    logger.opt(colors=True).info(f"<green>Finished... OK</>")
 
 
 if "__main__" == __name__:
