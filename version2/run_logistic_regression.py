@@ -627,8 +627,8 @@ def main() -> None:
         )
     ):
         # TODO: uncomment this if restarting. May need to modify the list
-        if fsname in {"baseline-only", "advanced-only", "fourier-only"}:
-           continue
+        # if fsname in {"baseline-only", "advanced-only", "fourier-only"}:
+        #    continue
         temp_output_dir = (
             f"{args.output_directory}" + os.path.sep + f"{fsname}"
         )
