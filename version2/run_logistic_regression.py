@@ -369,6 +369,10 @@ def trim_dataset(
     df = df.copy()
     logger.debug(f"0 ===> {len(df)}")
 
+    # This is not a realistic combination and the caller should never
+    # call this. Putting this assert in place for debugging reasons.
+    assert exclude_plaintext_nonbase32 == False
+
     if exclude_plaintext_nonbase32:
         selector = ~(df["is_encrypted"].astype(np.bool_)) & ~(
             df["an_is_base32"].astype(np.bool_)
@@ -501,9 +505,20 @@ def evaluate(
             "<yellow>- - - - - - - - - - - - - - - - - - - - - </>"
         )
         logger.opt(colors=True).info(f">> Combination {n:02d}: {message}")
+
+        # Skip this condition as this is not a realistic combination
+        if combination[0]:  # exclude_plaintext_nonbase32
+            continue
+
         temp_data = trim_dataset(data, *combination)
         if temp_data is not None:
             temp_dir = output_directory + os.path.sep + f"run-{n}"
+
+            # TODO: uncomment this if restarting. Delete the last worked upon
+            # folder
+            # if os.path.exists(temp_dir):
+            #    continue
+
             if not os.path.exists(temp_dir):
                 os.mkdir(temp_dir)
             logid2 = logger.add(
@@ -611,6 +626,9 @@ def main() -> None:
             colour="blue",
         )
     ):
+        # TODO: uncomment this if restarting. May need to modify the list
+        # if fsname in {"baseline-only", "advanced-only"}:
+        #    continue
         temp_output_dir = (
             f"{args.output_directory}" + os.path.sep + f"{fsname}"
         )
