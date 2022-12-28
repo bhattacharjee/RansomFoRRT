@@ -35,6 +35,33 @@ from sklearn.preprocessing import MinMaxScaler
 # import dotenv
 
 
+# Way to dynamically change the number of jobs at run time
+def get_num_jobs(default_jobs: int) -> int:
+    """This function provides a way to override the number of jobs specified
+    in the command line arguments dynamically.
+    A file called num_jobs.txt can be created and the first line
+    should contain the number of jobs.
+
+    Args:
+        default_jobs (int): default value if it is not overridden
+
+    Returns:
+        int: number of jobs to run
+    """
+    if not os.path.exists("num_jobs.txt"):
+        return default_jobs
+    with open("num_jobs.txt") as f:
+        try:
+            line = f.readlines()[0].strip()
+            temp_jobs = int(line)
+            if temp_jobs > 0 and temp_jobs < 20:
+                logger.info(f"NUM_JOBS override: {temp_jobs}")
+                return temp_jobs
+        except:
+            return default_jobs
+    return default_jobs
+
+
 def random_seed() -> None:
     np.random.seed(0)
     random.seed(0)
@@ -213,10 +240,11 @@ def get_pipeline(
     X: pd.DataFrame, n_jobs: int = 4
 ) -> Tuple[pipeline.Pipeline, Callable[[np.array], np.array]]:
     random_seed()
+    num_jobs = get_num_jobs(n_jobs)
     pipe = pipeline.Pipeline(
         [
             ("std", MinMaxScaler()),
-            ("classif", RandomForestClassifier(n_jobs=n_jobs)),
+            ("classif", RandomForestClassifier(n_jobs=num_jobs)),
         ]
     )
     # In case the predicted value needs to be converted to an integer
@@ -273,7 +301,7 @@ def evaluate_features_folded(
         logger.info(
             f"---> Running iteration #{nid:02d} for {folds} fold verification."
         )
-        pline, y_pred_fn = get_pipeline(X, n_jobs=8)
+        pline, y_pred_fn = get_pipeline(X, n_jobs=n_jobs)
         X_train, X_test = X[train_idx], X[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]
         pline.fit(X_train, y_train)
@@ -507,8 +535,6 @@ def evaluate(
 
             # TODO: uncomment this if restarting. Delete the last worked upon
             # folder
-            # if os.path.exists(temp_dir):
-            #    continue
             if os.path.exists(temp_dir):
                 continue
 
@@ -620,8 +646,8 @@ def main() -> None:
         )
     ):
         # TODO: uncomment this if restarting. May need to modify the list
-        # if fsname in {"baseline-only", "advanced-only"}:
-        #    continue
+        if fsname in {"baseline-only", "advanced-only", "fourier-only"}:
+            continue
         temp_output_dir = (
             f"{args.output_directory}" + os.path.sep + f"{fsname}"
         )
