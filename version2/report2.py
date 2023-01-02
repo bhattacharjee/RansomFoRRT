@@ -63,7 +63,6 @@ def get_grouped_stats(df: pd.DataFrame) -> pd.DataFrame:
     df = df.groupby("feature_set")[columns].agg(["mean", "std"]).reset_index()
     df["order"] = df["feature_set"].map(get_order_number)
     df = df.sort_values(by="order", ignore_index=True)
-    df = df[[c for c in df.columns if "order" != c]]
     df = df.set_index("feature_set")
     df.drop("order", axis=1, inplace=True)
     return df.reset_index()
