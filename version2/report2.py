@@ -59,7 +59,7 @@ def get_grouped_stats(df: pd.DataFrame) -> pd.DataFrame:
             for fnname, fn in stats.items()
         }
     ).reset_index()
-    columns = [k for k, v in stats.items()]
+    columns = [k for k, _ in stats.items()]
     df = df.groupby("feature_set")[columns].agg(["mean", "std"]).reset_index()
     df["order"] = df["feature_set"].map(get_order_number)
     df = df.sort_values(by="order", ignore_index=True)
