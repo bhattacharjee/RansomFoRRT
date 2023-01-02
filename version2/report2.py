@@ -1,8 +1,8 @@
-import pandas as pd
-import numpy as np
-from sklearn import metrics
 import argparse
-from typing import Dict, Any
+from typing import Dict
+
+import pandas as pd
+from sklearn import metrics
 
 stats = {
     "AUROC": (
@@ -18,7 +18,6 @@ stats = {
 }
 
 
-
 def get_order_number(name: str) -> int:
     order_of_columns = [
         "baseline-only",
@@ -27,7 +26,7 @@ def get_order_number(name: str) -> int:
         "baseline-and-advanced",
         "baseline-and-fourier",
         "advanced-and-fourier",
-        "baseline-advanced-and-fourier"
+        "baseline-advanced-and-fourier",
     ]
 
     for i, n in enumerate(order_of_columns):
@@ -35,10 +34,13 @@ def get_order_number(name: str) -> int:
             return i
     return -1
 
+
 def get_combined_stats(df: pd.DataFrame) -> pd.DataFrame:
-    df  = pd.DataFrame(
+    df = pd.DataFrame(
         {
-            fnname: df.groupby(["feature_set"])[["y_true", "y_pred", "y_pred_proba"]].apply(fn)
+            fnname: df.groupby(["feature_set"])[
+                ["y_true", "y_pred", "y_pred_proba"]
+            ].apply(fn)
             for fnname, fn in stats.items()
         }
     ).reset_index()
@@ -47,10 +49,13 @@ def get_combined_stats(df: pd.DataFrame) -> pd.DataFrame:
     df.drop("order", axis=1, inplace=True)
     return df
 
+
 def get_grouped_stats(df: pd.DataFrame) -> pd.DataFrame:
-    df  = pd.DataFrame(
+    df = pd.DataFrame(
         {
-            fnname: df.groupby(["feature_set", "run_name"])[["y_true", "y_pred", "y_pred_proba"]].apply(fn)
+            fnname: df.groupby(["feature_set", "run_name"])[
+                ["y_true", "y_pred", "y_pred_proba"]
+            ].apply(fn)
             for fnname, fn in stats.items()
         }
     ).reset_index()
@@ -62,8 +67,6 @@ def get_grouped_stats(df: pd.DataFrame) -> pd.DataFrame:
     df = df.set_index("feature_set")
     df.drop("order", axis=1, inplace=True)
     return df.reset_index()
-
-
 
 
 def get_metrics_comparisons(df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
@@ -85,7 +88,6 @@ def main():
     print("\n\n\nGROUPED")
     print("-" * len("GROUPED"))
     print(comparisons["grouped_stats"].reset_index(drop=True))
-
 
 
 if "__main__" == __name__:
