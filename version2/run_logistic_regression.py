@@ -35,6 +35,22 @@ from sklearn.preprocessing import MinMaxScaler
 # import dotenv
 
 
+def get_num_jobs(default_jobs: int) -> int:
+    if not os.path.exists("num_jobs.txt"):
+        return default_jobs
+    with open("num_jobs.txt") as f:
+        try:
+            line = f.readlines()[0].strip()
+            temp_jobs = int(line)
+            if temp_jobs > 0 and temp_jobs < 20:
+                return temp_jobs
+            else:
+                return default_jobs
+        except:
+            return default_jobs
+    return default_jobs
+
+
 def random_seed() -> None:
     np.random.seed(0)
     random.seed(0)
