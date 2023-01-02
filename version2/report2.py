@@ -8,11 +8,11 @@ stats = {
     "AUROC": (
         lambda df: metrics.roc_auc_score(df["y_true"], df["y_pred_proba"])
     ),
-    "F1": (lambda df: metrics.f1_score(df["y_true"], df["y_pred"])),
-    "accuracy": (
+    "F1-Score": (lambda df: metrics.f1_score(df["y_true"], df["y_pred"])),
+    "Accuracy": (
         lambda df: metrics.accuracy_score(df["y_true"], df["y_pred"])
     ),
-    "balanced_accuracy": (
+    "Balanced-Accuracy": (
         lambda df: metrics.balanced_accuracy_score(df["y_true"], df["y_pred"])
     ),
 }
@@ -43,7 +43,8 @@ def get_combined_stats(df: pd.DataFrame) -> pd.DataFrame:
         }
     ).reset_index()
     df["order"] = df["feature_set"].map(get_order_number)
-    df = df.sort_values(by="order")
+    df = df.sort_values(by="order", ignore_index=True)
+    df.drop("order", axis=1, inplace=True)
     return df
 
 def get_grouped_stats(df: pd.DataFrame) -> pd.DataFrame:
@@ -56,8 +57,10 @@ def get_grouped_stats(df: pd.DataFrame) -> pd.DataFrame:
     columns = [k for k, v in stats.items()]
     df = df.groupby("feature_set")[columns].agg(["mean", "std"]).reset_index()
     df["order"] = df["feature_set"].map(get_order_number)
-    df = df.sort_values(by="order")
+    df = df.sort_values(by="order", ignore_index=True)
     df = df[[c for c in df.columns if "order" != c]]
+    df = df.set_index("feature_set")
+    df.drop("order", axis=1, inplace=True)
     return df.reset_index()
 
 
