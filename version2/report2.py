@@ -5,15 +5,21 @@ import pandas as pd
 from sklearn import metrics
 
 stats = {
-    "AUROC": (
-        lambda df: metrics.roc_auc_score(df["y_true"], df["y_pred_proba"])
-    ),
-    "F1-Score": (lambda df: metrics.f1_score(df["y_true"], df["y_pred"])),
     "Accuracy": (
         lambda df: metrics.accuracy_score(df["y_true"], df["y_pred"])
     ),
     "Balanced-Accuracy": (
         lambda df: metrics.balanced_accuracy_score(df["y_true"], df["y_pred"])
+    ),
+    "Precision": (
+        lambda df: metrics.precision_score(df["y_true"], df["y_pred"])
+    ),
+    "Recall": (
+        lambda df: metrics.recall_score(df["y_true"], df["y_pred"])
+    ),
+    "F1-Score": (lambda df: metrics.f1_score(df["y_true"], df["y_pred"])),
+    "AUROC": (
+        lambda df: metrics.roc_auc_score(df["y_true"], df["y_pred_proba"])
     ),
 }
 
@@ -83,10 +89,10 @@ def main():
     comparisons = get_metrics_comparisons(df)
     print("COMBINED")
     print("-" * len("COMBINED"))
-    print(comparisons["combined_stats"].reset_index(drop=True))
+    print(comparisons["combined_stats"].round(3).reset_index(drop=True))
     print("\n\n\nGROUPED")
     print("-" * len("GROUPED"))
-    print(comparisons["grouped_stats"].reset_index(drop=True))
+    print(comparisons["grouped_stats"].round(3).reset_index(drop=True))
 
 
 if "__main__" == __name__:
