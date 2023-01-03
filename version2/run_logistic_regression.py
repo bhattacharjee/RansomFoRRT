@@ -585,7 +585,7 @@ def run_model(
     n_folds: int = -1,
     input_directory: str = None,
     output_directory: str = None,
-):
+) -> None:
     assert input_directory
     assert output_directory
 
