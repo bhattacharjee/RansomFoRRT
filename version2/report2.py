@@ -1,11 +1,9 @@
 import argparse
+from functools import partial
 from typing import Dict
 
 import pandas as pd
 from sklearn import metrics
-
-from functools import partial
-
 
 stats = {
     "Accuracy": (
@@ -120,7 +118,20 @@ def print_latex(
         if colname != ("feature_set", "")
     }
 
-    print(f"{highlight_min_max=}")
+    # Get rid of some columns that we don't want to print
+    df = df[
+        [
+            c
+            for c in df.columns
+            if (
+                not isinstance(c, tuple)
+                or c[0] not in ["Balanced-Accuracy", "Accuracy"]
+            )
+        ]
+    ]
+
+    for c in df.columns:
+        print(c, type(c))
 
     print()
     if highlight_min_max:
