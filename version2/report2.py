@@ -5,6 +5,28 @@ from typing import Dict
 import pandas as pd
 from sklearn import metrics
 
+
+def get_confusion_matrix_unraveled(
+    y_true: pd.Series, y_pred: pd.Series, which_rate: str
+):
+    columns = ["tnr", "fpr", "fnr", "tpr"]
+    output = list(metrics.confusion_matrix(y_true, y_pred).ravel())
+    assert len(output) == 4
+    assert sum(output) == len(y_true)
+    tn, fp, fn, tp = tuple(output)
+    tpr = tp / (tp + fn)
+    tnr = tn / (tn + fp)
+    fpr = fp / (tn + fp)
+    fnr = fn / (tp + fn)
+    output = [tnr, fpr, fnr, tpr]
+    return output[columns.index(which_rate)]
+
+
+fpr = partial(get_confusion_matrix_unraveled, which_rate="fpr")
+fnr = partial(get_confusion_matrix_unraveled, which_rate="fnr")
+tpr = partial(get_confusion_matrix_unraveled, which_rate="tpr")
+tnr = partial(get_confusion_matrix_unraveled, which_rate="tnr")
+
 stats = {
     "Accuracy": (
         lambda df: metrics.accuracy_score(df["y_true"], df["y_pred"])
@@ -12,6 +34,10 @@ stats = {
     "Balanced-Accuracy": (
         lambda df: metrics.balanced_accuracy_score(df["y_true"], df["y_pred"])
     ),
+    "TPR": (lambda df: tpr(df["y_true"], df["y_pred"])),
+    "TNR": (lambda df: tnr(df["y_true"], df["y_pred"])),
+    "FPR": (lambda df: fpr(df["y_true"], df["y_pred"])),
+    "FNR": (lambda df: fnr(df["y_true"], df["y_pred"])),
     "Precision": (
         lambda df: metrics.precision_score(df["y_true"], df["y_pred"])
     ),
@@ -106,13 +132,22 @@ def print_latex(
         else:
             return f"{x:.{num_decimals}f}"
 
+    def should_invert(colnames: str):
+        invert = False
+        if isinstance(colnames, tuple):
+            if "std" in colnames:
+                invert = True
+            if colnames[0] in ["FPR", "FNR"]:
+                invert = not invert
+        return invert
+
     formatters = {
         colname: partial(
             format_min_max,
             min_value=df[colname].min(),
             max_value=df[colname].max(),
             num_decimals=num_decimals,
-            invert=("std" in colname and isinstance(colname, tuple)),
+            invert=should_invert(colname),
         )
         for colname in df.columns
         if colname != ("feature_set", "")
@@ -137,15 +172,24 @@ def print_latex(
             if c not in [("Precision", "std"), ("Recall", "std")]
         ]
     ]
+    df = df[
+        [
+            c
+            for c in df.columns
+            if not (c[0] in ["FPR", "TPR", "FNR", "TNR"] and c[1] == "std")
+        ]
+    ]
 
     for c in df.columns:
         print(c, type(c))
 
     print()
     if highlight_min_max:
-        df_str = df.to_latex(formatters=formatters, escape=False)
+        df_str = df.to_latex(
+            formatters=formatters, escape=False, index_names=False
+        )
     else:
-        df_str = df.to_latex()
+        df_str = df.to_latex(index_names=False)
     print(df_str)
     print()
 
