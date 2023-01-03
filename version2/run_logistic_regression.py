@@ -21,14 +21,8 @@ from loguru import logger
 from sklearn import pipeline
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import (
-    accuracy_score,
-    balanced_accuracy_score,
-    f1_score,
-    precision_score,
-    recall_score,
-    roc_auc_score,
-)
+from sklearn.metrics import (accuracy_score, balanced_accuracy_score, f1_score,
+                             precision_score, recall_score, roc_auc_score)
 from sklearn.model_selection import StratifiedKFold, train_test_split
 from sklearn.preprocessing import MinMaxScaler
 
@@ -581,42 +575,25 @@ def evaluate(
     return True, combine_metrics(all_metrics)
 
 
-def main() -> None:
-    # dotenv.load_dotenv()
-    warnings.filterwarnings("ignore")
-    parser = argparse.ArgumentParser("Run experiments")
-    parser.add_argument(
-        "-i",
-        "--input-directory",
-        type=str,
-        required=True,
-        help="Input directory for data files.",
-    )
-    parser.add_argument(
-        "-o",
-        "--output-directory",
-        type=str,
-        required=True,
-        help="Output directory.",
-    )
-    parser.add_argument(
-        "-nj", "--n-jobs", type=int, default=4, help="Number of jobs to run."
-    )
-    parser.add_argument(
-        "-nf", "--n-folds", type=int, default=-1, help="Folds to run for"
-    )
-    args = parser.parse_args()
+def run_model(
+    n_jobs: int = 4,
+    n_folds: int = -1,
+    input_directory: str = None,
+    output_directory: str = None,
+):
+    assert input_directory
+    assert output_directory
 
-    if not os.path.exists(args.input_directory) or not os.path.isdir(
-        args.input_directory
+    if not os.path.exists(input_directory) or not os.path.isdir(
+        input_directory
     ):
-        raise Exception(f"Path {args.input_directory} does not exist")
-    if not os.path.exists(args.output_directory) or not os.path.isdir(
-        args.output_directory
+        raise Exception(f"Path {input_directory} does not exist")
+    if not os.path.exists(output_directory) or not os.path.isdir(
+        output_directory
     ):
-        os.mkdir(args.output_directory)
+        os.mkdir(output_directory)
 
-    log_file = f"{args.output_directory}{os.path.sep}log.log"
+    log_file = f"{output_directory}{os.path.sep}log.log"
     if os.path.exists(log_file):
         os.unlink(log_file)
     if os.path.exists(f"{log_file}.debug.log"):
@@ -627,11 +604,14 @@ def main() -> None:
         f"{log_file}.debug.log", backtrace=True, diagnose=True, level="DEBUG"
     )
     logger.add(sys.stderr, backtrace=True, diagnose=True, level="ERROR")
-    logger.opt(colors=True).info(f"<blue>Running with {args}</>")
+    logger.opt(colors=True).info(
+        f"<blue>Running with {output_directory=} {output_directory=}"
+        f"{n_folds=} {input_directory=}</>"
+    )
 
     random_seed()
 
-    data = load_data(args.input_directory)
+    data = load_data(input_directory)
 
     annot_columns = get_annotation_columns(data)
 
@@ -646,7 +626,7 @@ def main() -> None:
         # if fsname in {"baseline-only", "advanced-only", "fourier-only"}:
         #    continue
         temp_output_dir = (
-            f"{args.output_directory}" + os.path.sep + f"{fsname}"
+            f"{output_directory}" + os.path.sep + f"{fsname}"
         )
         print_text = (
             f"******** Processing {fsname} and writing into {temp_output_dir}"
@@ -676,8 +656,8 @@ def main() -> None:
             output_directory=temp_output_dir,
             feature_column_names=fscolumns,
             annotation_columns=annot_columns,
-            n_jobs=args.n_jobs,
-            folds=args.n_folds,
+            n_jobs=n_jobs,
+            folds=n_folds,
         )
         logger.remove(logid)
 
@@ -701,6 +681,37 @@ def main() -> None:
         logger.opt(colors=True).info(f"<magenta>{fsname} : {metrics}</>")
     print("Finished... OK")
     logger.opt(colors=True).info(f"<green>Finished... OK</>")
+
+
+def main() -> None:
+    # dotenv.load_dotenv()
+    warnings.filterwarnings("ignore")
+    parser = argparse.ArgumentParser("Run experiments")
+    parser.add_argument(
+        "-i",
+        "--input-directory",
+        type=str,
+        required=True,
+        help="Input directory for data files.",
+    )
+    parser.add_argument(
+        "-o",
+        "--output-directory",
+        type=str,
+        required=True,
+        help="Output directory.",
+    )
+    parser.add_argument(
+        "-nj", "--n-jobs", type=int, default=4, help="Number of jobs to run."
+    )
+    parser.add_argument(
+        "-nf", "--n-folds", type=int, default=-1, help="Folds to run for"
+    )
+    args = parser.parse_args()
+
+    run_model(
+        args.n_jobs, args.n_folds, args.input_directory, args.output_directory
+    )
 
 
 if "__main__" == __name__:
