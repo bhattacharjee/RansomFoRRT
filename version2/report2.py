@@ -118,6 +118,7 @@ def print_latex(
         if colname != ("feature_set", "")
     }
 
+    # Columns are in two levels, each column is a tuple of two values
     # Get rid of some columns that we don't want to print
     df = df[
         [
@@ -127,6 +128,13 @@ def print_latex(
                 not isinstance(c, tuple)
                 or c[0] not in ["Balanced-Accuracy", "Accuracy"]
             )
+        ]
+    ]
+    df = df[
+        [
+            c
+            for c in df.columns
+            if c not in [("Precision", "std"), ("Recall", "std")]
         ]
     ]
 
