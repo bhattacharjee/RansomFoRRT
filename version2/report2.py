@@ -4,6 +4,9 @@ from typing import Dict
 import pandas as pd
 from sklearn import metrics
 
+from functools import partial
+
+
 stats = {
     "Accuracy": (
         lambda df: metrics.accuracy_score(df["y_true"], df["y_pred"])
@@ -14,9 +17,7 @@ stats = {
     "Precision": (
         lambda df: metrics.precision_score(df["y_true"], df["y_pred"])
     ),
-    "Recall": (
-        lambda df: metrics.recall_score(df["y_true"], df["y_pred"])
-    ),
+    "Recall": (lambda df: metrics.recall_score(df["y_true"], df["y_pred"])),
     "F1-Score": (lambda df: metrics.f1_score(df["y_true"], df["y_pred"])),
     "AUROC": (
         lambda df: metrics.roc_auc_score(df["y_true"], df["y_pred_proba"])
@@ -80,9 +81,66 @@ def get_metrics_comparisons(df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
     return {"combined_stats": combined_stats, "grouped_stats": grouped_stats}
 
 
+def print_latex(
+    df: pd.DataFrame, highlight_min_max: bool = False, num_decimals: int = 3
+) -> None:
+    def format_min_max(
+        x,
+        min_value: float,
+        max_value: float,
+        num_decimals: int = 3,
+        invert: bool = False,
+    ) -> str:
+        if isinstance(x, str):
+            return x
+        # if round(x, num_decimals) == round(min_value, num_decimals):
+        if x == min_value:
+            if not invert:
+                return f"\\textOrange{{{x:.{num_decimals}f}}}"
+            else:
+                return f"\\textBlue{{{x:.{num_decimals}f}}}"
+        # elif round(x, num_decimals) == round(max_value, num_decimals):
+        elif x == max_value:
+            if not invert:
+                return f"\\textBlue{{{x:.{num_decimals}f}}}"
+            else:
+                return f"\\textOrange{{{x:.{num_decimals}f}}}"
+        else:
+            return f"{x:.{num_decimals}f}"
+
+    formatters = {
+        colname: partial(
+            format_min_max,
+            min_value=df[colname].min(),
+            max_value=df[colname].max(),
+            num_decimals=num_decimals,
+            invert=("std" in colname and isinstance(colname, tuple)),
+        )
+        for colname in df.columns
+        if colname != ("feature_set", "")
+    }
+
+    print(f"{highlight_min_max=}")
+
+    print()
+    if highlight_min_max:
+        df_str = df.to_latex(formatters=formatters, escape=False)
+    else:
+        df_str = df.to_latex()
+    print(df_str)
+    print()
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--file", type=str, required=True)
+    parser.add_argument(
+        "-tl", "--to-latex", action="store_true", default=False
+    )
+    parser.add_argument(
+        "-hm", "--highlight-min-max", action="store_true", default=False
+    )
+    parser.add_argument("-nd", "--num-decimals", type=int, default=3)
     args = parser.parse_args()
 
     df = pd.read_csv(args.file)
@@ -90,9 +148,21 @@ def main():
     print("COMBINED")
     print("-" * len("COMBINED"))
     print(comparisons["combined_stats"].round(3).reset_index(drop=True))
+    if args.to_latex:
+        print_latex(
+            comparisons["combined_stats"].reset_index(drop=True),
+            args.highlight_min_max,
+            args.num_decimals,
+        )
     print("\n\n\nGROUPED")
     print("-" * len("GROUPED"))
     print(comparisons["grouped_stats"].round(3).reset_index(drop=True))
+    if args.to_latex:
+        print_latex(
+            comparisons["grouped_stats"].reset_index(drop=True),
+            args.highlight_min_max,
+            args.num_decimals,
+        )
 
 
 if "__main__" == __name__:
