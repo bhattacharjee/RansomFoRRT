@@ -19,11 +19,16 @@ import pandas as pd
 import tqdm
 from loguru import logger
 from sklearn import pipeline
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import (accuracy_score, balanced_accuracy_score, f1_score,
-                             precision_score, recall_score, roc_auc_score)
-from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.metrics import (
+    accuracy_score,
+    balanced_accuracy_score,
+    f1_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+)
+from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import MinMaxScaler
 
 # import dotenv
@@ -40,7 +45,7 @@ def get_num_jobs(default_jobs: int) -> int:
                 return temp_jobs
             else:
                 return default_jobs
-        except:
+        except Exception as e:
             return default_jobs
     return default_jobs
 
@@ -193,7 +198,7 @@ def load_data(input_directory: str) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A combined dataframe of all files
     """
-    p = 0.02
+    # p = 0.02
     logger.info("Loading dataframes")
     dataframes = {
         # f: pd.read_csv(f, skiprows=lambda i: i > 0 and random.random() > p)
@@ -381,7 +386,7 @@ def trim_dataset(
 
     # This is not a realistic combination and the caller should never
     # call this. Putting this assert in place for debugging reasons.
-    assert exclude_plaintext_nonbase32 == False
+    assert not exclude_plaintext_nonbase32
 
     if exclude_plaintext_nonbase32:
         selector = ~(df["is_encrypted"].astype(np.bool_)) & ~(
@@ -433,11 +438,11 @@ def trim_dataset(
 
     try:
         non_encrypted_count = (~df["is_encrypted"]).astype(np.int8).abs().sum()
-    except:
+    except Exception as e:
         non_encrypted_count = 0
     try:
         encrypted_count = df["is_encrypted"].astype(np.int8).abs().sum()
-    except:
+    except Exception as e:
         encrypted_count = 0
 
     logger.info(
@@ -625,9 +630,7 @@ def run_model(
         # TODO: uncomment this if restarting. May need to modify the list
         # if fsname in {"baseline-only", "advanced-only", "fourier-only"}:
         #    continue
-        temp_output_dir = (
-            f"{output_directory}" + os.path.sep + f"{fsname}"
-        )
+        temp_output_dir = f"{output_directory}" + os.path.sep + f"{fsname}"
         print_text = (
             f"******** Processing {fsname} and writing into {temp_output_dir}"
         )
@@ -680,7 +683,7 @@ def run_model(
             break
         logger.opt(colors=True).info(f"<magenta>{fsname} : {metrics}</>")
     print("Finished... OK")
-    logger.opt(colors=True).info(f"<green>Finished... OK</>")
+    logger.opt(colors=True).info("<green>Finished... OK</>")
 
 
 def main() -> None:
