@@ -210,7 +210,7 @@ def main():
     # them now if they are there
     df = df[df["exclude_plaintext_nonbase32"] == False]
 
-    comparisons = get_metrics_comparisons(df)
+    comparisons: Dict[str, pd.DataFrame] = get_metrics_comparisons(df)
 
     print("COMBINED")
     print("-" * len("COMBINED"))
