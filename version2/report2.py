@@ -180,9 +180,6 @@ def print_latex(
         ]
     ]
 
-    for c in df.columns:
-        print(c, type(c))
-
     print()
     if highlight_min_max:
         df_str = df.to_latex(
@@ -207,7 +204,14 @@ def main():
     args = parser.parse_args()
 
     df = pd.read_csv(args.file)
+
+    # Some of our runs have additional rows which should have
+    # been discarded before running the experiments. Discard
+    # them now if they are there
+    df = df[df["exclude_plaintext_nonbase32"] == False]
+
     comparisons = get_metrics_comparisons(df)
+
     print("COMBINED")
     print("-" * len("COMBINED"))
     print(comparisons["combined_stats"].round(3).reset_index(drop=True))
