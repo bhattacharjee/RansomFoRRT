@@ -159,9 +159,16 @@ def print_latex(
         [
             c
             for c in df.columns
+            if (not isinstance(c, tuple) or c[0] not in ["Balanced-Accuracy"])
+        ]
+    ]
+    df = df[
+        [
+            c
+            for c in df.columns
             if (
                 not isinstance(c, tuple)
-                or c[0] not in ["Balanced-Accuracy", "Accuracy"]
+                or not (c[0] in ["Accuracy"] and c[1] in ["std"])
             )
         ]
     ]
@@ -201,6 +208,7 @@ def main():
         "-hm", "--highlight-min-max", action="store_true", default=False
     )
     parser.add_argument("-nd", "--num-decimals", type=int, default=3)
+    parser.add_argument("-tp", "--to-parquet", type=str, default=None)
     args = parser.parse_args()
 
     df = pd.read_csv(args.file)
@@ -229,6 +237,14 @@ def main():
             comparisons["grouped_stats"].reset_index(drop=True),
             args.highlight_min_max,
             args.num_decimals,
+        )
+
+    if args.to_parquet:
+        comparisons["grouped_stats"].to_parquet(
+            f"{args.to_parquet}.grouped.parquet"
+        )
+        comparisons["combined_stats"].to_parquet(
+            f"{args.to_parquet}.combined.parquet"
         )
 
 
