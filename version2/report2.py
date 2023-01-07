@@ -54,10 +54,14 @@ def get_order_number(name: str) -> int:
         "baseline-only",
         "advanced-only",
         "fourier-only",
+        "fourier-min",
         "baseline-and-advanced",
         "baseline-and-fourier",
+        "baseline-and-fourier-min",
         "advanced-and-fourier",
+        "advanced-and-fourier-min",
         "baseline-advanced-and-fourier",
+        "baseline-advanced-and-fourier-min",
     ]
 
     for i, n in enumerate(order_of_columns):
