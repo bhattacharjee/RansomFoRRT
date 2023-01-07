@@ -99,35 +99,50 @@ def get_columns_and_types(thisdf: pd.DataFrame) -> Dict[str, List[str]]:
     baseline_columns = get_columns(columns, "baseline")
     advanced_columns = get_columns(columns, "advanced")
     fourier_columns = get_columns(columns, "fourier")
+    fourier_min_columns = [
+        "fourier.stat.1byte.autocorr",
+        "fourier.stat.1byte.mean",
+        "fourier.stat.1byte.std",
+        "fourier.stat.1byte.chisq",
+        "fourier.stat.1byte.moment.2",
+        "fourier.stat.1byte.moment.3",
+        "fourier.stat.1byte.moment.4",
+        "fourier.stat.1byte.moment.5",
+    ]
 
     baseline_and_advanced = list(set(baseline_columns + advanced_columns))
     baseline_and_fourier = list(set(baseline_columns + fourier_columns))
     advanced_and_fourier = list(set(advanced_columns + fourier_columns))
+    baseline_and_fourier_min = list(
+        set(baseline_columns + fourier_min_columns)
+    )
+    advanced_and_fourier_min = list(
+        set(advanced_columns + fourier_min_columns)
+    )
 
     baseline_advanced_fourier = list(
         set(baseline_columns + advanced_columns + fourier_columns)
     )
-    logger.info(
-        {
-            "baseline-only": baseline_columns,
-            "advanced-only": advanced_columns,
-            "fourier-only": fourier_columns,
-            "baseline-and-fourier": baseline_and_fourier,
-            "baseline-and-advanced": baseline_and_advanced,
-            "advanced-and-fourier": advanced_and_fourier,
-            "baseline-advanced-and-fourier": baseline_advanced_fourier,
-        }
+    baseline_advanced_and_fourier_min = list(
+        set(baseline_columns + advanced_columns + fourier_min_columns)
     )
 
-    return {
+    rv = {
         "baseline-only": baseline_columns,
         "advanced-only": advanced_columns,
         "fourier-only": fourier_columns,
         "baseline-and-fourier": baseline_and_fourier,
+        "baseline-and-fourier-min": baseline_and_fourier_min,
         "baseline-and-advanced": baseline_and_advanced,
         "advanced-and-fourier": advanced_and_fourier,
+        "advanced-and-fourier-min": advanced_and_fourier_min,
         "baseline-advanced-and-fourier": baseline_advanced_fourier,
+        "baseline-advanced-and-fourier-min": baseline_advanced_and_fourier_min,
     }
+
+    logger.info(f"Features = {rv}")
+
+    return rv
 
 
 def get_annotation_columns(thisdf: pd.DataFrame) -> List[str]:
@@ -645,12 +660,18 @@ def main() -> None:
             colour="blue",
         )
     ):
-        # TODO: uncomment this if restarting. May need to modify the list
-        if fsname in {"baseline-only", "advanced-only", "fourier-only"}:
-            continue
         temp_output_dir = (
             f"{args.output_directory}" + os.path.sep + f"{fsname}"
         )
+
+        # TODO: uncomment this if restarting. May need to modify the list
+        if fsname in {"baseline-only", "advanced-only", "fourier-only"}:
+            continue
+        # TODO: uncomment if required
+        if os.path.exists(temp_output_dir) and os.path.isdir(temp_output_dir):
+            logger.info(f"{temp_output_dir} exists, skipping feature set")
+            continue
+
         print_text = (
             f"******** Processing {fsname} and writing into {temp_output_dir}"
         )
