@@ -54,7 +54,7 @@ def get_order_number(name: str) -> int:
         "baseline-only",
         "advanced-only",
         "fourier-only",
-        "fourier-min",
+        "fourier-min-only",
         "baseline-and-advanced",
         "baseline-and-fourier",
         "baseline-and-fourier-min",
@@ -64,9 +64,15 @@ def get_order_number(name: str) -> int:
         "baseline-advanced-and-fourier-min",
     ]
 
-    for i, n in enumerate(order_of_columns):
-        if name == n:
-            return i
+    order_of_columns = {
+        name1: order for order, name1 in enumerate(order_of_columns)
+    }
+
+    # Can be an alias in some runs
+    order_of_columns["fourier-min"] = order_of_columns["fourier-min-only"]
+
+    if name in order_of_columns:
+        return order_of_columns[name]
     return -1
 
 
