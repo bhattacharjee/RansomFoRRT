@@ -139,8 +139,6 @@ def get_columns_and_types(thisdf: pd.DataFrame) -> Dict[str, List[str]]:
         #"baseline-advanced-and-fourier-min": baseline_advanced_and_fourier_min,
     }
 
-    logger.info(f"Features = {rv}")
-
     return rv["baseline-advanced-and-fourier"]
 
 
@@ -411,16 +409,24 @@ def main() -> None:
 
     y = dataset["is_encrypted"].to_numpy()
     X = dataset[[c for c in dataset.columns if c != "is_encrypted"]]
-    X = X[get_columns_and_types(X)].to_numpy()
+    X = X[get_columns_and_types(X)]
+    cols = [str(c) for c in X.columns]
+    cols = [c for c in cols if "fourier.value" not in c]
+    cols = [c for c in cols if "4byte" not in c]
+    X = X[cols]
+    X_save = X
     X = MinMaxScaler().fit_transform(X)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.33, random_state=42)
     classif.fit(X_train, y_train)
 
-    X_test = X_test[:2000, :]
+    df = {c: X_test[:, i] for i, c in enumerate(X_save.columns)}
+    X_test = pd.DataFrame(X_test)
+    X_test = X_test.sample(frac=(1500.0 / len(X_test)))
+
 
     explainer = shap.Explainer(classif.predict, X_test)
     shap_values = explainer(X_test, max_evals=1500)
-    shap.plots.beeswarm(shap_values)
+    shap.summary_plot(shap_values[:1000,:], X_test.iloc[:1000,:], plot_type="layered_violin", color='coolwarm')
     plt.show()
 
 
