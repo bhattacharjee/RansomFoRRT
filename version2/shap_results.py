@@ -57,7 +57,6 @@ def get_num_jobs(default_jobs: int) -> int:
             line = f.readlines()[0].strip()
             temp_jobs = int(line)
             if temp_jobs > 0 and temp_jobs < 20:
-                logger.info(f"NUM_JOBS override: {temp_jobs}")
                 return temp_jobs
         except:
             return default_jobs
@@ -296,8 +295,7 @@ def trim_dataset(
     exclude_nonwebp: bool = False,
 ):
     df = df.copy()
-    logger.debug(f"0 ===> {len(df)}")
-
+ 
     # This is not a realistic combination and the caller should never
     # call this. Putting this assert in place for debugging reasons.
     assert exclude_plaintext_nonbase32 == False
@@ -307,48 +305,40 @@ def trim_dataset(
             df["an_is_base32"].astype(np.bool_)
         )
         df = df[~selector]
-    logger.debug(f"1 ===> {len(df)}")
 
     if exclude_plaintext_base32:
         selector = ~(df["is_encrypted"].astype(np.bool_)) & df[
             "an_is_base32"
         ].astype(np.bool_)
         df = df[~selector]
-    logger.debug(f"2 ===> {len(df)}")
 
     if exclude_encrypted_v1:
         selector = df["an_v1_encrypted"].astype(np.bool_)
         df = df[~selector]
-    logger.debug(f"3 ===> {len(df)}")
 
     if exclude_encrypted_v2:
         selector = df["an_v2_encrypted"].astype(np.bool_)
         df = df[~selector]
-    logger.debug(f"4 ===> {len(df)}")
 
     if exclude_encrypted_base32:
         selector = df["is_encrypted"].astype(np.bool_) & df[
             "an_is_base32"
         ].astype(np.bool_)
         df = df[~selector]
-    logger.debug(f"5 ===> {len(df)}")
 
     if exclude_encrypted_nonbase32:
         selector = df["is_encrypted"].astype(np.bool_) & ~(
             df["an_is_base32"].astype(np.bool_)
         )
         df = df[~selector]
-    logger.debug(f"6 ===> {len(df)}")
 
     if exclude_webp:
         selector = df["an_is_webp"].astype(np.bool_)
         df = df[~selector]
-    logger.debug(f"7 ===> {len(df)}")
 
     if exclude_nonwebp:
         selector = ~(df["an_is_webp"].astype(np.bool_))
         df = df[~selector]
-    logger.debug(f"8 ===> {len(df)}")
 
     try:
         non_encrypted_count = (~df["is_encrypted"]).astype(np.int8).abs().sum()
@@ -358,10 +348,6 @@ def trim_dataset(
         encrypted_count = df["is_encrypted"].astype(np.int8).abs().sum()
     except:
         encrypted_count = 0
-
-    logger.info(
-        f"Encrypted: {encrypted_count} Non-Encrypted: {non_encrypted_count}"
-    )
 
     gc_collect()
 
